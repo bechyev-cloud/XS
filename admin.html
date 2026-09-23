@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>XCAR — Админ-панель</title>
+<script>
+/* ==================== НАСТРОЙКА СЕРВЕРА ====================
+   Тот же адрес, что вписан в window.XCAR_API_BASE внутри основного index.html. */
+window.XCAR_API_BASE = 'https://ВАШ-СЕРВЕР.example.com/api';
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  color-scheme:dark;
+  --bg:#14161c; --surface:#1c2029; --surface-2:#242936; --surface-3:#2c3242;
+  --border:#333a4a; --accent:#f2a93b; --accent-dim:#7a5b25; --accent-2:#3ec9a7;
+  --danger:#e8604c; --danger-dim:rgba(232,96,76,0.14);
+  --text:#eef0f4; --text-dim:#9aa0ad; --text-faint:#5d6472;
+  --font-display:'Rajdhani',sans-serif; --font-body:'Inter',sans-serif;
+  --radius:14px; --radius-sm:9px;
+  --shadow-soft:0 1px 0 rgba(255,255,255,0.03) inset, 0 16px 32px -20px rgba(0,0,0,0.65);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
+h1,h2,h3,.disp{font-family:var(--font-display);font-weight:700;}
+button{font-family:inherit;}
+input,select,textarea{font-family:var(--font-body);}
+.btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;font-size:14px;cursor:pointer;transition:transform .1s;}
+.btn:active{transform:scale(0.98);}
+.btn.primary{background:linear-gradient(155deg,#ffc266,var(--accent));color:#241a06;}
+.btn.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+.btn.danger{background:var(--danger-dim);color:var(--danger);border:1px solid rgba(232,96,76,0.35);}
+.btn.sm{padding:8px 12px;font-size:12.5px;border-radius:9px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:600;}
+.field input,.field textarea{
+  width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 13px;color:var(--text);font-size:14.5px;outline:none;
+}
+.field input:focus,.field textarea:focus{border-color:var(--accent-dim);}
+.field textarea{font-family:'SF Mono',Consolas,monospace;font-size:12.5px;line-height:1.5;min-height:220px;resize:vertical;}
+
+/* ---- Login ---- */
+#loginScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(circle at 50% -10%, var(--accent-dim) 0%, transparent 48%), var(--bg);}
+.login-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-soft);padding:30px 26px;}
+.login-mark{width:56px;height:56px;border-radius:18px;background:linear-gradient(155deg,#ffc266,var(--accent));display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.login-title{font-size:23px;text-align:center;}
+.login-sub{font-size:12.5px;color:var(--text-dim);text-align:center;margin:6px 0 22px;}
+.login-error{background:var(--danger-dim);border:1px solid rgba(232,96,76,0.35);color:var(--danger);font-size:12.5px;padding:10px 12px;border-radius:12px;margin-bottom:14px;display:none;}
+.login-error.show{display:block;}
+
+/* ---- App shell ---- */
+#appScreen{display:none;min-height:100vh;}
+#appScreen.show{display:block;}
+header.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 22px;background:rgba(20,22,28,0.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--border);}
+header.top .brand{display:flex;align-items:center;gap:10px;font-size:18px;}
+main{max-width:1100px;margin:0 auto;padding:22px 18px 60px;}
+
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;}
+.stat-card .n{font-family:var(--font-display);font-weight:700;font-size:26px;}
+.stat-card .l{font-size:11.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
+
+.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.toolbar input{flex:1;min-width:200px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;}
+
+.acc-table{width:100%;border-collapse:collapse;}
+.acc-table th{text-align:left;font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.4px;padding:0 12px 10px;font-weight:600;}
+.acc-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.acc-card .main{flex:1;min-width:180px;}
+.acc-card .company{font-weight:700;font-size:15px;}
+.acc-card .contact{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+.acc-card .counts{display:flex;gap:14px;font-size:12px;color:var(--text-dim);}
+.acc-card .counts b{color:var(--text);font-family:var(--font-display);}
+.acc-card .date{font-size:11.5px;color:var(--text-faint);white-space:nowrap;}
+.acc-card .actions{display:flex;gap:8px;}
+.empty-note{color:var(--text-dim);font-size:13.5px;padding:30px 10px;text-align:center;}
+
+/* ---- Modal ---- */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,11,14,0.65);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;z-index:100;overflow-y:auto;padding:30px 16px;}
+.modal-overlay.show{display:flex;}
+.modal{width:100%;max-width:560px;background:var(--surface);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-soft);animation:pop .2s ease;}
+@keyframes pop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);}
+.modal-head h3{margin:0;font-size:18px;}
+.modal-body{padding:18px 20px 22px;}
+.icon-btn{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;line-height:1;padding:6px;}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.tab-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);border-radius:9px;padding:7px 11px;font-size:12px;cursor:pointer;font-weight:600;}
+.tab-btn.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--surface-3);color:var(--text);padding:12px 18px;border-radius:12px;font-size:13.5px;box-shadow:var(--shadow-soft);opacity:0;transition:opacity .2s,transform .2s;z-index:200;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.hint{font-size:11.5px;color:var(--text-faint);margin-top:8px;line-height:1.5;}
+
+/* ---- Верхняя навигация по разделам ---- */
+.section-nav{max-width:1100px;margin:0 auto;padding:14px 18px 0;display:flex;gap:8px;flex-wrap:wrap;}
+.nav-tab{background:var(--surface);border:1px solid var(--border);color:var(--text-dim);border-radius:12px;padding:10px 16px;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;}
+.nav-tab.active{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+.nav-badge{background:var(--danger);color:#fff;font-size:11px;font-weight:700;border-radius:20px;padding:1px 7px;min-width:18px;text-align:center;}
+
+/* ---- Подписка/тариф ---- */
+.sub-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.2px;}
+.sub-badge.trial{background:rgba(242,169,59,0.16);color:var(--accent);}
+.sub-badge.active{background:rgba(62,201,167,0.14);color:var(--accent-2);}
+.sub-badge.expired{background:var(--danger-dim);color:var(--danger);}
+
+/* ---- Заявки на оплату ---- */
+.req-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.req-card .main{flex:1;min-width:200px;}
+.req-card .company{font-weight:700;font-size:15px;}
+.req-card .meta{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+.req-card .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.req-card input.months{width:64px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;text-align:center;}
+.req-status{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.req-status.pending{background:rgba(242,169,59,0.16);color:var(--accent);}
+.req-status.approved{background:rgba(62,201,167,0.14);color:var(--accent-2);}
+.req-status.rejected{background:var(--danger-dim);color:var(--danger);}
+
+/* ---- Настройки тарифов ---- */
+.plan-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:12px;}
+.plan-row .field{margin-bottom:0;}
+.section-block{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 18px 6px;margin-bottom:18px;}
+.section-block h3{margin:0 0 4px;font-size:16px;}
+.section-block .desc{font-size:12.5px;color:var(--text-dim);margin-bottom:16px;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-mark">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#241a06" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h1a2 2 0 1 0 4 0h4a2 2 0 1 0 4 0h1a1 1 0 0 0 1-1v-3a2 2 0 0 0-.4-1.2l-2.1-2.8a2 2 0 0 0-1.6-.8H6a1 1 0 0 0-1 .8L4.2 12A2 2 0 0 0 4 12.8V16a1 1 0 0 0 1 1Z"/><path d="M4 12h16"/></svg>
+    </div>
+    <div class="login-title">XCAR — Админка</div>
+    <div class="login-sub">Управление всеми зарегистрированными аккаунтами сервиса</div>
+    <div class="login-error" id="loginError"></div>
+    <form onsubmit="return doLogin(event)">
+      <div class="field"><label>Пароль администратора</label><input id="adminPass" type="password" placeholder="Введите пароль" autofocus></div>
+      <button class="btn primary" type="submit" style="width:100%;" id="loginBtn">Войти</button>
+    </form>
+  </div>
+</div>
+
+<div id="appScreen">
+  <header class="top">
+    <div class="brand"><span class="disp">XCAR</span>&nbsp;<span style="color:var(--text-dim);font-size:13px;">Админ-панель</span></div>
+    <button class="btn ghost sm" onclick="doLogout()">Выйти</button>
+  </header>
+  <div class="section-nav" id="sectionNav"></div>
+  <main>
+    <div id="viewAccounts">
+      <div class="stats-row" id="statsRow"></div>
+      <div class="toolbar">
+        <input id="searchInput" placeholder="Поиск: компания, имя, телефон, e-mail…" oninput="renderUsers()">
+        <button class="btn primary" onclick="openCreateModal()">+ Создать аккаунт</button>
+        <button class="btn ghost" onclick="loadAll()">Обновить</button>
+      </div>
+      <div id="usersList"></div>
+    </div>
+    <div id="viewRequests" style="display:none;">
+      <div class="toolbar">
+        <div style="flex:1;font-size:13px;color:var(--text-dim);align-self:center;">Заявки клиентов на выбор/продление тарифа — подтвердите после получения перевода.</div>
+        <button class="btn ghost" onclick="loadRequests()">Обновить</button>
+      </div>
+      <div id="requestsList"></div>
+    </div>
+    <div id="viewSettings" style="display:none;"></div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_TOKEN_KEY = 'xcar_admin_token';
+let STATE = {
+  users: [], stats: null, openUserId: null, openUserStore: null, openTab: 'cars',
+  view: 'accounts', requests: [], pendingCount: 0, config: null, qrCodeImage: ''
+};
+const DATA_TABS = [
+  ['cars','Машины'], ['clients','Клиенты'], ['contracts','Договоры'],
+  ['clientLedger','Баланс клиентов'], ['oilChanges','Замены масла'],
+  ['sharedClients','Общая база'], ['sharedClientSources','Источники общей базы'], ['settings','Настройки']
+];
+
+function apiBase(){
+  const b = (window.XCAR_API_BASE || '').replace(/\/+$/,'');
+  // Если константа вверху файла не настроена (или страница открыта прямо с сервера,
+  // по адресу /admin) — используем текущий адрес сервера, там же живёт /api.
+  if(!b || b.indexOf('ВАШ-СЕРВЕР')>=0) return location.origin + '/api';
+  return b;
+}
+function getToken(){ try{ return localStorage.getItem(ADMIN_TOKEN_KEY); }catch(e){ return null; } }
+function setToken(t){ try{ if(t) localStorage.setItem(ADMIN_TOKEN_KEY, t); else localStorage.removeItem(ADMIN_TOKEN_KEY); }catch(e){} }
+
+async function api(path, options){
+  options = options || {};
+  const base = apiBase();
+  const headers = Object.assign({'Content-Type':'application/json'}, options.headers||{});
+  const token = getToken();
+  if(token) headers['Authorization'] = 'Bearer '+token;
+  let res;
+  try{ res = await fetch(base+path, Object.assign({}, options, {headers})); }
+  catch(e){ throw new Error('Нет соединения с сервером'); }
+  let body = null;
+  try{ body = await res.json(); }catch(e){}
+  if(res.status===401 || res.status===403){
+    if(path !== '/admin/login'){ setToken(null); showLogin(); }
+    throw new Error((body&&body.error) || 'Требуется авторизация');
+  }
+  if(!res.ok) throw new Error((body&&body.error) || ('Ошибка сервера ('+res.status+')'));
+  return body;
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window.__tt);
+  window.__tt = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtDate(iso){ try{ return new Date(iso).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso||''; } }
+function fmtDateShort(iso){ try{ return new Date(iso).toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return iso||''; } }
+function subBadgeHtml(sub){
+  if(!sub) return '';
+  const cls = sub.status==='trial' ? 'trial' : sub.status==='active' ? 'active' : 'expired';
+  const label = sub.status==='trial' ? 'Пробный · '+sub.daysLeft+' дн.'
+    : sub.status==='active' ? (sub.planName||'Активен')+' · '+sub.daysLeft+' дн.'
+    : 'Истёк';
+  return `<span class="sub-badge ${cls}">${esc(label)}</span>`;
+}
+
+function showLogin(){
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appScreen').classList.remove('show');
+}
+function showApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').classList.add('show');
+  renderNav();
+  loadAll();
+  loadRequests();
+  loadSettings();
+  // Счётчик новых заявок на вкладке "Заявки на оплату" обновляется сам, даже если
+  // администратор остаётся на другой вкладке — чтобы сразу было видно, что клиент
+  // оплатил и ждёт подключения подписки.
+  clearInterval(window.__reqPollTimer);
+  window.__reqPollTimer = setInterval(()=>{ if(getToken()) loadRequests(); }, 45000);
+}
+
+/* ---- Навигация по разделам ---- */
+function renderNav(){
+  const tabs = [
+    ['accounts','Аккаунты',null],
+    ['requests','Заявки на оплату', STATE.pendingCount],
+    ['settings','Настройки',null]
+  ];
+  document.getElementById('sectionNav').innerHTML = tabs.map(([key,label,badge])=>`
+    <button class="nav-tab ${STATE.view===key?'active':''}" onclick="switchView('${key}')">
+      ${label}${badge?`<span class="nav-badge">${badge}</span>`:''}
+    </button>
+  `).join('');
+}
+function switchView(view){
+  STATE.view = view;
+  renderNav();
+  document.getElementById('viewAccounts').style.display = view==='accounts' ? '' : 'none';
+  document.getElementById('viewRequests').style.display = view==='requests' ? '' : 'none';
+  document.getElementById('viewSettings').style.display = view==='settings' ? '' : 'none';
+  if(view==='requests') loadRequests();
+  if(view==='settings') loadSettings();
+}
+
+async function doLogin(ev){
+  ev.preventDefault();
+  const errEl = document.getElementById('loginError');
+  errEl.classList.remove('show');
+  const password = document.getElementById('adminPass').value;
+  if(!password){ errEl.textContent='Введите пароль'; errEl.classList.add('show'); return false; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Входим…';
+  try{
+    const r = await api('/admin/login', { method:'POST', body: JSON.stringify({ password }) });
+    setToken(r.token);
+    showApp();
+  }catch(e){
+    errEl.textContent = e.message || 'Не удалось войти';
+    errEl.classList.add('show');
+  }
+  btn.disabled = false; btn.textContent = 'Войти';
+  return false;
+}
+function doLogout(){
+  setToken(null);
+  clearInterval(window.__reqPollTimer);
+  showLogin();
+}
+
+async function loadAll(){
+  try{
+    const [statsR, usersR] = await Promise.all([ api('/admin/stats'), api('/admin/users') ]);
+    STATE.stats = statsR;
+    STATE.users = usersR.users;
+    renderStats();
+    renderUsers();
+  }catch(e){
+    showToast(e.message || 'Ошибка загрузки');
+  }
+}
+
+/* ---- Заявки на выбор/продление тарифа ---- */
+async function loadRequests(){
+  try{
+    const r = await api('/admin/payment-requests');
+    STATE.requests = r.requests;
+    STATE.pendingCount = r.pendingCount;
+    renderNav();
+    renderRequests();
+  }catch(e){
+    showToast(e.message || 'Не удалось загрузить заявки');
+  }
+}
+const REQ_STATUS_LABELS = { pending:'Ожидает', approved:'Подтверждена', rejected:'Отклонена' };
+function renderRequests(){
+  const el = document.getElementById('requestsList');
+  if(!STATE.requests.length){
+    el.innerHTML = `<div class="empty-note">Заявок пока нет</div>`;
+    return;
+  }
+  el.innerHTML = STATE.requests.map(r=>`
+    <div class="req-card">
+      <div class="main">
+        <div class="company">${esc(r.user ? r.user.companyName : 'Аккаунт удалён')}
+          <span class="req-status ${r.status}">${REQ_STATUS_LABELS[r.status]||r.status}</span>
+        </div>
+        <div class="meta">${r.user ? esc(r.user.fullName)+' · '+esc(r.user.phone) : ''}</div>
+        ${r.contactPhone ? `<div class="meta">Клиент указал для связи: <b style="color:var(--text);">${esc(r.contactPhone)}</b></div>` : ''}
+        <div class="meta">Тариф: <b style="color:var(--text);">${r.plan ? esc(r.plan.name)+' · '+r.plan.price.toLocaleString('ru-RU')+' ₽/мес · до '+r.plan.carLimit+' машин' : esc(r.planId)}</b></div>
+        <div class="meta">Срок: <b style="color:var(--text);">${r.months||1} мес.</b>${r.amount ? ' · к оплате: <b style="color:var(--accent);">'+r.amount.toLocaleString('ru-RU')+' ₽</b>' : ''}</div>
+        <div class="meta">Заявка от ${fmtDate(r.createdAt)}${r.resolvedAt ? ' · обработана '+fmtDate(r.resolvedAt)+(r.monthsGranted?' · +'+r.monthsGranted+' мес.':'') : ''}</div>
+      </div>
+      ${r.status==='pending' && r.user ? `
+        <div class="actions">
+          <input class="months" type="number" min="1" value="${r.months||1}" id="months_${r.id}" title="Сколько месяцев оплачено">
+          <button class="btn primary sm" onclick="approveRequest('${r.id}')">Подтвердить</button>
+          <button class="btn danger sm" onclick="rejectRequest('${r.id}')">Отклонить</button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+async function approveRequest(id){
+  const input = document.getElementById('months_'+id);
+  const months = Number(input ? input.value : 1);
+  if(!Number.isFinite(months) || months <= 0){ showToast('Укажите количество месяцев'); return; }
+  try{
+    await api('/admin/payment-requests/'+id+'/approve', { method:'POST', body: JSON.stringify({ months }) });
+    showToast('Подписка продлена на '+months+' мес.');
+    loadRequests();
+    loadAll();
+  }catch(e){ showToast(e.message || 'Не удалось подтвердить заявку'); }
+}
+async function rejectRequest(id){
+  if(!confirm('Отклонить эту заявку? Подписка клиента не изменится.')) return;
+  try{
+    await api('/admin/payment-requests/'+id+'/reject', { method:'POST' });
+    showToast('Заявка отклонена');
+    loadRequests();
+  }catch(e){ showToast(e.message || 'Не удалось отклонить заявку'); }
+}
+
+/* ---- Настройки: тарифы, пробный период, реквизиты для перевода ---- */
+async function loadSettings(){
+  try{
+    const r = await api('/admin/settings');
+    STATE.config = r.config;
+    STATE.qrCodeImage = r.config.payment.qrCodeImage || '';
+    renderSettings();
+  }catch(e){ showToast(e.message || 'Не удалось загрузить настройки'); }
+}
+// QR-код читаем на клиенте в base64 (data URL) и держим в STATE.qrCodeImage до сохранения —
+// саму загрузку на сервер делает saveSettings() вместе с остальными реквизитами.
+function onQrFileChosen(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  if(file.size > 3*1024*1024){ showToast('Файл слишком большой (максимум 3 МБ)'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    STATE.qrCodeImage = reader.result;
+    const wrap = document.getElementById('qrPreviewWrap');
+    if(wrap) wrap.innerHTML = `<img id="qrPreviewImg" src="${STATE.qrCodeImage}" style="width:100%;height:100%;object-fit:contain;">`;
+  };
+  reader.readAsDataURL(file);
+}
+function clearQrCode(){
+  STATE.qrCodeImage = '';
+  const wrap = document.getElementById('qrPreviewWrap');
+  if(wrap) wrap.innerHTML = `<span style="font-size:11px;color:var(--text-faint);text-align:center;padding:6px;">Нет QR-кода</span>`;
+  const fileInput = document.getElementById('s_qr_file');
+  if(fileInput) fileInput.value = '';
+}
+function renderSettings(){
+  const cfg = STATE.config;
+  if(!cfg){ document.getElementById('viewSettings').innerHTML = ''; return; }
+  document.getElementById('viewSettings').innerHTML = `
+    <div class="section-block">
+      <h3>Тарифы</h3>
+      <div class="desc">Название, лимит машин и цена в месяц для каждого тарифа. Изменение цены не затрагивает уже оплаченные периоды.</div>
+      <div id="plansEditor">
+        ${cfg.plans.map((p,i)=>`
+          <div class="plan-row" data-idx="${i}">
+            <div class="field"><label>Название</label><input class="p_name" value="${esc(p.name)}"></div>
+            <div class="field"><label>Лимит машин</label><input class="p_limit" type="number" min="1" value="${p.carLimit}"></div>
+            <div class="field"><label>Цена, ₽/мес</label><input class="p_price" type="number" min="0" value="${p.price}"></div>
+            <input type="hidden" class="p_id" value="${esc(p.id)}">
+          </div>
+        `).join('')}
+      </div>
+      <div class="field" style="max-width:220px;"><label>Пробный период, дней</label><input id="s_trialDays" type="number" min="0" value="${cfg.trialDays}"></div>
+    </div>
+    <div class="section-block">
+      <h3>Реквизиты для перевода</h3>
+      <div class="desc">Клиент увидит эти данные сразу после выбора или продления тарифа — переведите он должен именно по ним.</div>
+      <div class="field"><label>Получатель</label><input id="s_holder" value="${esc(cfg.payment.holder)}" placeholder="Иванов Иван Иванович"></div>
+      <div class="field"><label>Банк</label><input id="s_bank" value="${esc(cfg.payment.bank)}" placeholder="Т-Банк"></div>
+      <div class="field"><label>Номер карты</label><input id="s_card" value="${esc(cfg.payment.cardNumber)}" placeholder="2200 1234 5678 9010"></div>
+      <div class="field"><label>Телефон для СБП</label><input id="s_phone" value="${esc(cfg.payment.phone)}" placeholder="+7 900 123-45-67"></div>
+      <div class="field"><label>Комментарий клиенту</label><input id="s_comment" value="${esc(cfg.payment.comment)}" placeholder="Например: укажите email аккаунта в комментарии к переводу"></div>
+      <div class="field">
+        <label>QR-код для оплаты (СБП/банк)</label>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div id="qrPreviewWrap" style="width:110px;height:110px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">
+            ${cfg.payment.qrCodeImage ? `<img id="qrPreviewImg" src="${cfg.payment.qrCodeImage}" style="width:100%;height:100%;object-fit:contain;">` : `<span style="font-size:11px;color:var(--text-faint);text-align:center;padding:6px;">Нет QR-кода</span>`}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <input type="file" id="s_qr_file" accept="image/*" onchange="onQrFileChosen(this)" style="font-size:12.5px;">
+            <button type="button" class="btn ghost sm" style="width:fit-content;" onclick="clearQrCode()">Удалить QR-код</button>
+          </div>
+        </div>
+        <div class="desc" style="margin-top:8px;">Клиент увидит эту картинку на экране оплаты тарифа — загрузите QR для приёма перевода (СБП-банка или карты). Необязательно.</div>
+      </div>
+    </div>
+    <div class="section-block">
+      <h3>Восстановление пароля — почта (SMTP)</h3>
+      <div class="desc">Пока эти поля пустые, код восстановления по e-mail не отправляется (только пишется в лог сервера). Подойдёт SMTP любого почтового ящика — например Яндекс.Почты или Gmail (обычно нужен «пароль приложения», а не обычный пароль от ящика).</div>
+      <div class="field"><label>SMTP-сервер (host)</label><input id="s_smtp_host" value="${esc(cfg.notify.smtp.host)}" placeholder="smtp.yandex.ru"></div>
+      <div class="plan-row" style="grid-template-columns:1fr 1fr;">
+        <div class="field"><label>Порт</label><input id="s_smtp_port" type="number" min="1" value="${cfg.notify.smtp.port}"></div>
+        <div class="field"><label>SSL (порт 465)</label>
+          <select id="s_smtp_secure"><option value="0" ${!cfg.notify.smtp.secure?'selected':''}>Нет (STARTTLS, обычно 587)</option><option value="1" ${cfg.notify.smtp.secure?'selected':''}>Да (465)</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Логин (обычно совпадает с адресом отправителя)</label><input id="s_smtp_user" value="${esc(cfg.notify.smtp.user)}" placeholder="noreply@yourcompany.ru"></div>
+      <div class="field"><label>Пароль (или пароль приложения)</label><input id="s_smtp_pass" type="password" value="${esc(cfg.notify.smtp.pass)}" placeholder="••••••••" autocomplete="new-password"></div>
+      <div class="field"><label>От кого (необязательно, иначе — логин)</label><input id="s_smtp_from" value="${esc(cfg.notify.smtp.from)}" placeholder="XCAR <noreply@yourcompany.ru>"></div>
+    </div>
+    <div class="section-block">
+      <h3>Восстановление пароля — SMS (smsc.ru)</h3>
+      <div class="desc">Пока логин/пароль пустые, код восстановления по телефону не отправляется (только пишется в лог сервера). Нужен аккаунт на <b>smsc.ru</b> — популярный российский SMS-шлюз с простым HTTP API.</div>
+      <div class="field"><label>Логин smsc.ru</label><input id="s_sms_login" value="${esc(cfg.notify.sms.login)}"></div>
+      <div class="field"><label>Пароль или API-ключ smsc.ru</label><input id="s_sms_pass" type="password" value="${esc(cfg.notify.sms.password)}" placeholder="••••••••" autocomplete="new-password"></div>
+      <div class="field"><label>Имя отправителя (если подключено, необязательно)</label><input id="s_sms_sender" value="${esc(cfg.notify.sms.sender)}"></div>
+      <button class="btn primary" style="width:100%;margin:4px 0 18px;" onclick="saveSettings()">Сохранить настройки</button>
+    </div>
+  `;
+}
+async function saveSettings(){
+  const rows = document.querySelectorAll('#plansEditor .plan-row');
+  const plans = Array.from(rows).map(row=>({
+    id: row.querySelector('.p_id').value,
+    name: row.querySelector('.p_name').value.trim(),
+    carLimit: Number(row.querySelector('.p_limit').value),
+    price: Number(row.querySelector('.p_price').value)
+  }));
+  const trialDays = Number(document.getElementById('s_trialDays').value);
+  const payment = {
+    holder: document.getElementById('s_holder').value.trim(),
+    bank: document.getElementById('s_bank').value.trim(),
+    cardNumber: document.getElementById('s_card').value.trim(),
+    phone: document.getElementById('s_phone').value.trim(),
+    comment: document.getElementById('s_comment').value.trim(),
+    qrCodeImage: STATE.qrCodeImage || ''
+  };
+  const notify = {
+    smtp: {
+      host: document.getElementById('s_smtp_host').value.trim(),
+      port: Number(document.getElementById('s_smtp_port').value) || 587,
+      secure: document.getElementById('s_smtp_secure').value === '1',
+      user: document.getElementById('s_smtp_user').value.trim(),
+      pass: document.getElementById('s_smtp_pass').value,
+      from: document.getElementById('s_smtp_from').value.trim()
+    },
+    sms: {
+      login: document.getElementById('s_sms_login').value.trim(),
+      password: document.getElementById('s_sms_pass').value,
+      sender: document.getElementById('s_sms_sender').value.trim()
+    }
+  };
+  try{
+    const r = await api('/admin/settings', { method:'PUT', body: JSON.stringify({ plans, trialDays, payment, notify }) });
+    STATE.config = r.config;
+    showToast('Настройки сохранены');
+  }catch(e){ showToast(e.message || 'Не удалось сохранить настройки'); }
+}
+
+function renderStats(){
+  const s = STATE.stats || { usersCount:0, cars:0, clients:0, contracts:0 };
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="n">${s.usersCount}</div><div class="l">Аккаунтов</div></div>
+    <div class="stat-card"><div class="n">${s.cars}</div><div class="l">Машин всего</div></div>
+    <div class="stat-card"><div class="n">${s.clients}</div><div class="l">Клиентов всего</div></div>
+    <div class="stat-card"><div class="n">${s.contracts}</div><div class="l">Договоров всего</div></div>
+  `;
+}
+
+function renderUsers(){
+  const q = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  const list = STATE.users.filter(u=>{
+    if(!q) return true;
+    return [u.companyName,u.fullName,u.phone,u.email].some(v=>(v||'').toLowerCase().includes(q));
+  });
+  const el = document.getElementById('usersList');
+  if(!list.length){
+    el.innerHTML = `<div class="empty-note">${STATE.users.length ? 'Ничего не найдено' : 'Пока нет ни одного зарегистрированного аккаунта'}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(u=>`
+    <div class="acc-card">
+      <div class="main">
+        <div class="company">${esc(u.companyName)}${u.createdByAdmin?' <span style="color:var(--text-faint);font-weight:400;font-size:11px;">· создан вручную</span>':''}</div>
+        <div class="contact">${esc(u.fullName)} · ${esc(u.phone)}${u.email?' · '+esc(u.email):''}</div>
+        <div style="margin-top:6px;">${subBadgeHtml(u.subscription)}</div>
+      </div>
+      <div class="counts">
+        <div><b>${u.counts.cars}</b> машин${u.subscription?' / '+u.subscription.carLimit:''}</div>
+        <div><b>${u.counts.clients}</b> клиентов</div>
+        <div><b>${u.counts.contracts}</b> договоров</div>
+      </div>
+      <div class="date">${fmtDate(u.createdAt)}</div>
+      <div class="actions">
+        <button class="btn ghost sm" onclick="openUserModal('${u.id}')">Открыть</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ---- Модалка создания аккаунта ---- */
+function openCreateModal(){
+  document.getElementById('modalBox').innerHTML = `
+    <div class="modal-head"><h3>Создать аккаунт</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Имя владельца</label><input id="c_name" placeholder="Иван Иванов"></div>
+      <div class="field"><label>Название компании</label><input id="c_company" placeholder="Прокат Авто Юг"></div>
+      <div class="field"><label>Телефон</label><input id="c_phone" placeholder="+7 900 123-45-67"></div>
+      <div class="field"><label>E-mail (необязательно)</label><input id="c_email" placeholder="mail@mail.ru"></div>
+      <div class="field"><label>Пароль</label><input id="c_pass" type="password" placeholder="Минимум 6 символов"></div>
+      <div class="hint">Аккаунт будет создан сразу, без прохождения формы регистрации и без выставления галочек согласия — это ваша ответственность как администратора, создающего аккаунт за пользователя.</div>
+      <button class="btn primary" style="width:100%;margin-top:14px;" onclick="submitCreate()">Создать</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+async function submitCreate(){
+  const fullName = document.getElementById('c_name').value.trim();
+  const companyName = document.getElementById('c_company').value.trim();
+  const phone = document.getElementById('c_phone').value.trim();
+  const email = document.getElementById('c_email').value.trim();
+  const password = document.getElementById('c_pass').value;
+  if(!fullName || !companyName || !phone || !password){ showToast('Заполните обязательные поля'); return; }
+  try{
+    await api('/admin/users', { method:'POST', body: JSON.stringify({ fullName, companyName, phone, email, password }) });
+    showToast('Аккаунт создан');
+    closeModal();
+    loadAll();
+  }catch(e){ showToast(e.message || 'Не удалось создать аккаунт'); }
+}
+
+/* ---- Модалка карточки аккаунта ---- */
+async function openUserModal(id){
+  try{
+    const r = await api('/admin/users/'+id);
+    STATE.openUserId = id;
+    STATE.openUserStore = r.store;
+    STATE.openTab = 'cars';
+    renderUserModal(r.user);
+    document.getElementById('modalOverlay').classList.add('show');
+  }catch(e){ showToast(e.message || 'Не удалось открыть аккаунт'); }
+}
+function renderUserModal(u){
+  const plans = (STATE.config && STATE.config.plans) || [
+    { id:'start', name:'Старт', price:1500, carLimit:3 },
+    { id:'standard', name:'Стандарт', price:2500, carLimit:8 },
+    { id:'business', name:'Бизнес', price:4500, carLimit:15 }
+  ];
+  document.getElementById('modalBox').innerHTML = `
+    <div class="modal-head"><h3>${esc(u.companyName)}</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Имя владельца</label><input id="u_name" value="${esc(u.fullName)}"></div>
+      <div class="field"><label>Название компании</label><input id="u_company" value="${esc(u.companyName)}"></div>
+      <div class="field"><label>Телефон</label><input id="u_phone" value="${esc(u.phone)}"></div>
+      <div class="field"><label>E-mail</label><input id="u_email" value="${esc(u.email||'')}"></div>
+      <div style="display:flex;gap:8px;margin:4px 0 18px;flex-wrap:wrap;">
+        <button class="btn primary sm" onclick="submitUserEdit('${u.id}')">Сохранить</button>
+        <button class="btn ghost sm" onclick="promptResetPassword('${u.id}')">Сбросить пароль</button>
+        <button class="btn danger sm" onclick="confirmDeleteUser('${u.id}')">Удалить аккаунт</button>
+      </div>
+
+      <div class="section-title" style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Тариф ${subBadgeHtml(u.subscription)}</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">${u.subscription && u.subscription.expiresAt ? 'Действует до '+fmtDateShort(u.subscription.expiresAt)+' · лимит '+u.subscription.carLimit+' машин' : 'Нет данных о подписке'}</div>
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end;">
+        <div class="field" style="margin-bottom:0;min-width:140px;"><label>Тариф</label>
+          <select id="u_sub_plan">${plans.map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${p.carLimit} машин)</option>`).join('')}</select>
+        </div>
+        <div class="field" style="margin-bottom:0;width:90px;"><label>Месяцев</label><input id="u_sub_months" type="number" min="1" value="1"></div>
+        <button class="btn primary sm" onclick="extendUserSubscription('${u.id}')">Продлить/выдать</button>
+      </div>
+
+      <div class="section-title" style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Данные аккаунта</div>
+      <div class="tabs" id="dataTabs"></div>
+      <div class="field"><textarea id="dataEditor" spellcheck="false"></textarea></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary sm" onclick="saveCurrentTab('${u.id}')">Сохранить раздел</button>
+        <button class="btn ghost sm" onclick="formatCurrentTab()">Форматировать JSON</button>
+      </div>
+      <div class="hint">Формат тот же, что использует приложение. Осторожно: сохранение полностью заменяет раздел — проверьте JSON перед сохранением. Если у пользователя в этот момент открыто приложение, его следующее сохранение может перезаписать вашу правку.</div>
+    </div>
+  `;
+  renderDataTabs();
+}
+function renderDataTabs(){
+  const tabsEl = document.getElementById('dataTabs');
+  tabsEl.innerHTML = DATA_TABS.map(([key,label])=>
+    `<button class="tab-btn ${STATE.openTab===key?'active':''}" onclick="switchDataTab('${key}')">${label}</button>`
+  ).join('');
+  document.getElementById('dataEditor').value = JSON.stringify(STATE.openUserStore[STATE.openTab], null, 2);
+}
+function switchDataTab(key){
+  STATE.openTab = key;
+  renderDataTabs();
+}
+function formatCurrentTab(){
+  const ta = document.getElementById('dataEditor');
+  try{ ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); }
+  catch(e){ showToast('Некорректный JSON: '+e.message); }
+}
+async function saveCurrentTab(userId){
+  const ta = document.getElementById('dataEditor');
+  let value;
+  try{ value = JSON.parse(ta.value); }
+  catch(e){ showToast('Некорректный JSON: '+e.message); return; }
+  try{
+    await api('/admin/users/'+userId+'/data/'+STATE.openTab, { method:'PUT', body: JSON.stringify({ value }) });
+    STATE.openUserStore[STATE.openTab] = value;
+    showToast('Раздел «'+(DATA_TABS.find(t=>t[0]===STATE.openTab)||[])[1]+'» сохранён');
+    loadAll();
+  }catch(e){ showToast(e.message || 'Не удалось сохранить'); }
+}
+async function submitUserEdit(userId){
+  const fullName = document.getElementById('u_name').value.trim();
+  const companyName = document.getElementById('u_company').value.trim();
+  const phone = document.getElementById('u_phone').value.trim();
+  const email = document.getElementById('u_email').value.trim();
+  try{
+    await api('/admin/users/'+userId, { method:'PUT', body: JSON.stringify({ fullName, companyName, phone, email }) });
+    showToast('Данные аккаунта сохранены');
+    loadAll();
+  }catch(e){ showToast(e.message || 'Не удалось сохранить'); }
+}
+async function extendUserSubscription(userId){
+  const planId = document.getElementById('u_sub_plan').value;
+  const months = Number(document.getElementById('u_sub_months').value);
+  if(!Number.isFinite(months) || months <= 0){ showToast('Укажите количество месяцев'); return; }
+  try{
+    const r = await api('/admin/users/'+userId+'/subscription', { method:'PUT', body: JSON.stringify({ planId, months }) });
+    showToast('Тариф обновлён');
+    renderUserModal(r.user);
+    loadAll();
+  }catch(e){ showToast(e.message || 'Не удалось обновить тариф'); }
+}
+async function promptResetPassword(userId){
+  const pass = prompt('Новый пароль для этого аккаунта (минимум 6 символов):');
+  if(!pass) return;
+  if(pass.length < 6){ showToast('Пароль слишком короткий'); return; }
+  try{
+    await api('/admin/users/'+userId+'/password', { method:'PUT', body: JSON.stringify({ password: pass }) });
+    showToast('Пароль обновлён');
+  }catch(e){ showToast(e.message || 'Не удалось сбросить пароль'); }
+}
+async function confirmDeleteUser(userId){
+  if(!confirm('Удалить этот аккаунт целиком, вместе со всеми его данными (машины, клиенты, договоры)? Это необратимо.')) return;
+  try{
+    await api('/admin/users/'+userId, { method:'DELETE' });
+    showToast('Аккаунт удалён');
+    closeModal();
+    loadAll();
+  }catch(e){ showToast(e.message || 'Не удалось удалить'); }
+}
+
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+/* ---- Init ---- */
+if(getToken()){ showApp(); } else { showLogin(); }
+</script>
+</body>
+</html>
