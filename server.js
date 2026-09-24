@@ -9,6 +9,8 @@ const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
 const adminRoutes = require('./routes/admin');
 const billingRoutes = require('./routes/billing');
+const pushRoutes = require('./routes/push');
+const { startNotifier } = require('./lib/notifier');
 
 const app = express();
 app.disable('x-powered-by');
@@ -28,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/push', pushRoutes);
 
 // Супер-админ панель — отдаётся прямо этим сервером, без отдельного хостинга.
 // Откройте https://ваш-сервер/admin в браузере.
@@ -50,3 +53,8 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`XCAR server запущен на порту ${PORT}`);
 });
+
+// Проверка просроченных аренд и напоминаний о ТО для push-уведомлений — раз
+// в 5 минут, пока процесс сервера жив (см. комментарий в lib/notifier.js
+// про "засыпание" на бесплатных тарифах хостинга).
+startNotifier(5 * 60 * 1000);
