@@ -8,6 +8,8 @@ const {
 const { hashPassword, signAdminToken, adminAuthMiddleware } = require('../lib/auth');
 const { readConfig, writeConfig, computeTariffAmount } = require('../lib/config');
 const { listRequests, resolveRequest } = require('../lib/requests');
+const { listTickets, closeTicket } = require('../lib/support');
+const push = require('../lib/push');
 const { extendSubscription, publicSubscription, ensureSubscription, trialSubscription } = require('../lib/subscription');
 
 const router = express.Router();
@@ -32,6 +34,8 @@ function publicUser(u, cfg) {
     email: u.email,
     createdAt: u.createdAt,
     createdByAdmin: !!u.createdByAdmin,
+    blocked: !!u.blocked,
+    blockedAt: u.blockedAt || null,
     subscription: cfg ? publicSubscription(u.subscription, cfg) : undefined
   };
 }
@@ -171,6 +175,24 @@ router.put('/users/:id/password', async (req, res) => {
   user.passwordHash = await hashPassword(password);
   await writeUsers(usersData);
   res.json({ ok: true });
+});
+
+// PUT /api/admin/users/:id/block { blocked: true|false } — заблокировать/разблокировать
+// нежелательного клиента: блокировка запрещает и вход (см. routes/auth.js), и
+// использование уже выданного токена (см. authMiddleware в lib/auth.js) — то есть
+// и "заблокировать клиента на сервере", и "заблокировать приложение клиента"
+// из одного и того же запроса пользователя (раздел 20) реализованы одним флагом.
+router.put('/users/:id/block', async (req, res) => {
+  const usersData = await readUsers();
+  const user = usersData.users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'Аккаунт не найден' });
+
+  const { blocked } = req.body || {};
+  user.blocked = !!blocked;
+  user.blockedAt = user.blocked ? new Date().toISOString() : null;
+  await writeUsers(usersData);
+  const cfg = await readConfig();
+  res.json({ user: publicUser(user, cfg) });
 });
 
 // DELETE /api/admin/users/:id — удалить аккаунт целиком (профиль + все его данные)
@@ -347,6 +369,60 @@ router.put('/settings', async (req, res) => {
   };
   const saved = await writeConfig(next);
   res.json({ config: saved });
+});
+
+// ---- Тех. поддержка: обращения клиентов (раздел 20) ----
+
+// GET /api/admin/support — список обращений (новые сверху), с данными
+// клиента, чтобы в панели не делать отдельных запросов (тот же паттерн, что
+// и у /payment-requests выше).
+router.get('/support', async (req, res) => {
+  const usersData = await readUsers();
+  const tickets = await listTickets();
+  const enriched = tickets.map(t => {
+    const user = usersData.users.find(u => u.id === t.userId);
+    return Object.assign({}, t, {
+      user: user ? { id: user.id, fullName: user.fullName, companyName: user.companyName, phone: user.phone } : null
+    });
+  });
+  const openCount = enriched.filter(t => t.status === 'open').length;
+  res.json({ tickets: enriched, openCount });
+});
+
+// POST /api/admin/support/:id/close — отметить обращение решённым
+router.post('/support/:id/close', async (req, res) => {
+  const ticket = await closeTicket(req.params.id);
+  if (!ticket) return res.status(404).json({ error: 'Обращение не найдено' });
+  res.json({ ok: true, ticket });
+});
+
+// ---- Новости всем клиентам приложения (раздел 20) ----
+
+// POST /api/admin/broadcast { title, body } — рассылает push-уведомление
+// сразу всем клиентам, у кого включены и активны push-уведомления (те же
+// подписки, что уже используются для напоминаний о просрочке/ТО/платежах,
+// см. lib/push.js и раздел 16.2) — отдельного экрана "центра уведомлений"
+// внутри приложения не заводилось, новость приходит как обычный push в
+// системный центр уведомлений телефона.
+router.post('/broadcast', async (req, res) => {
+  const { title, body } = req.body || {};
+  const text = String(body || '').trim();
+  if (!text) return res.status(400).json({ error: 'Введите текст новости' });
+  const userIds = push.allUserIdsWithSubs();
+  let sent = 0;
+  for (const userId of userIds) {
+    try {
+      const r = await push.sendToUser(userId, {
+        title: String(title || '').trim() || 'XCAR — новость',
+        body: text,
+        tag: 'admin-broadcast'
+      });
+      sent += r.sent || 0;
+    } catch (e) {
+      console.error('broadcast: не удалось отправить пользователю', userId, e && e.message);
+    }
+  }
+  res.json({ ok: true, usersNotified: userIds.length, sent });
 });
 
 module.exports = router;

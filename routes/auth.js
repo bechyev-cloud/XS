@@ -143,6 +143,10 @@ router.post('/login', authLimiter, async (req, res) => {
     const ok = await comparePassword(password, user.passwordHash);
     if (!ok) return res.status(401).json({ error: 'Неверный логин или пароль' });
 
+    if (user.blocked) {
+      return res.status(403).json({ error: 'Ваш аккаунт заблокирован администратором', blocked: true });
+    }
+
     const cfg = await readConfig();
     const token = signToken(user);
     res.json({ token, user: publicUser(user, cfg) });

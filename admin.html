@@ -146,7 +146,10 @@ main{max-width:1100px;margin:0 auto;padding:22px 18px 60px;}
 <div id="appScreen">
   <header class="top">
     <div class="brand"><span class="disp">XCAR</span>&nbsp;<span style="color:var(--text-dim);font-size:13px;">Админ-панель</span></div>
-    <button class="btn ghost sm" onclick="doLogout()">Выйти</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn ghost sm" onclick="openBroadcastModal()" title="Отправить новость push-уведомлением всем клиентам">📢 Новость всем</button>
+      <button class="btn ghost sm" onclick="doLogout()">Выйти</button>
+    </div>
   </header>
   <div class="section-nav" id="sectionNav"></div>
   <main>
@@ -166,6 +169,13 @@ main{max-width:1100px;margin:0 auto;padding:22px 18px 60px;}
       </div>
       <div id="requestsList"></div>
     </div>
+    <div id="viewSupport" style="display:none;">
+      <div class="toolbar">
+        <div style="flex:1;font-size:13px;color:var(--text-dim);align-self:center;">Обращения клиентов в техподдержку (из Настроек приложения) — отметьте решённым, когда проблема закрыта.</div>
+        <button class="btn ghost" onclick="loadSupport()">Обновить</button>
+      </div>
+      <div id="supportList"></div>
+    </div>
     <div id="viewSettings" style="display:none;"></div>
   </main>
 </div>
@@ -180,7 +190,8 @@ main{max-width:1100px;margin:0 auto;padding:22px 18px 60px;}
 const ADMIN_TOKEN_KEY = 'xcar_admin_token';
 let STATE = {
   users: [], stats: null, openUserId: null, openUserStore: null, openTab: 'cars',
-  view: 'accounts', requests: [], pendingCount: 0, config: null, qrCodeImage: ''
+  view: 'accounts', requests: [], pendingCount: 0, config: null, qrCodeImage: '',
+  support: [], openSupportCount: 0
 };
 const DATA_TABS = [
   ['cars','Машины'], ['clients','Клиенты'], ['contracts','Договоры'],
@@ -226,13 +237,36 @@ function showToast(msg){
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function fmtDate(iso){ try{ return new Date(iso).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso||''; } }
 function fmtDateShort(iso){ try{ return new Date(iso).toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return iso||''; } }
+// Раздел 20: "выдели тариф который действует в данный момент, чтобы знать
+// на котором тарифе клиент" — уточнено, что нужно в панели администратора
+// (список аккаунтов). Раньше бейдж был компактным и одноцветным для всех
+// активных тарифов ("Активен"/зелёный) — теперь у каждого тарифа свой цвет
+// (стабильный хэш по id тарифа, не завязан на порядок/состав tariffs.plans,
+// поэтому не ломается при добавлении/удалении тарифов, см. раздел 19 про
+// mergeDefaults) и название тарифа всегда написано текстом, крупнее и жирнее.
+const PLAN_BADGE_COLORS = [
+  { bg:'rgba(148,163,184,0.18)', fg:'#c7ceda' },   // серый — как тема "Бесплатный" в клиенте
+  { bg:'rgba(62,201,167,0.18)',  fg:'#5fe0c0' },   // бирюзовый
+  { bg:'rgba(242,169,59,0.20)',  fg:'#f2a93b' },   // золотой
+  { bg:'rgba(142,151,255,0.20)', fg:'#a7aeff' }    // фиолетовый
+];
+function planColorFor(planId){
+  const s = String(planId||'');
+  let h = 0;
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return PLAN_BADGE_COLORS[h % PLAN_BADGE_COLORS.length];
+}
 function subBadgeHtml(sub){
   if(!sub) return '';
-  const cls = sub.status==='trial' ? 'trial' : sub.status==='active' ? 'active' : 'expired';
-  const label = sub.status==='trial' ? 'Пробный · '+sub.daysLeft+' дн.'
-    : sub.status==='active' ? (sub.planName||'Активен')+' · '+sub.daysLeft+' дн.'
-    : 'Истёк';
-  return `<span class="sub-badge ${cls}">${esc(label)}</span>`;
+  if(sub.status==='expired'){
+    return `<span class="sub-badge expired">Тариф истёк</span>`;
+  }
+  if(sub.status==='trial'){
+    return `<span class="sub-badge trial">Пробный период · ${sub.daysLeft} дн.</span>`;
+  }
+  const c = planColorFor(sub.planId);
+  const label = (sub.planName||'Активен')+' · '+sub.daysLeft+' дн.';
+  return `<span class="sub-badge" style="background:${c.bg};color:${c.fg};font-size:12.5px;padding:4px 11px;">${esc(label)}</span>`;
 }
 
 function showLogin(){
@@ -245,12 +279,13 @@ function showApp(){
   renderNav();
   loadAll();
   loadRequests();
+  loadSupport();
   loadSettings();
-  // Счётчик новых заявок на вкладке "Заявки на оплату" обновляется сам, даже если
+  // Счётчики новых заявок и обращений в поддержку обновляются сами, даже если
   // администратор остаётся на другой вкладке — чтобы сразу было видно, что клиент
-  // оплатил и ждёт подключения подписки.
+  // оплатил и ждёт подключения подписки, или написал в поддержку.
   clearInterval(window.__reqPollTimer);
-  window.__reqPollTimer = setInterval(()=>{ if(getToken()) loadRequests(); }, 45000);
+  window.__reqPollTimer = setInterval(()=>{ if(getToken()){ loadRequests(); loadSupport(); } }, 45000);
 }
 
 /* ---- Навигация по разделам ---- */
@@ -258,6 +293,7 @@ function renderNav(){
   const tabs = [
     ['accounts','Аккаунты',null],
     ['requests','Заявки на оплату', STATE.pendingCount],
+    ['support','Поддержка', STATE.openSupportCount],
     ['settings','Настройки',null]
   ];
   document.getElementById('sectionNav').innerHTML = tabs.map(([key,label,badge])=>`
@@ -271,8 +307,10 @@ function switchView(view){
   renderNav();
   document.getElementById('viewAccounts').style.display = view==='accounts' ? '' : 'none';
   document.getElementById('viewRequests').style.display = view==='requests' ? '' : 'none';
+  document.getElementById('viewSupport').style.display = view==='support' ? '' : 'none';
   document.getElementById('viewSettings').style.display = view==='settings' ? '' : 'none';
   if(view==='requests') loadRequests();
+  if(view==='support') loadSupport();
   if(view==='settings') loadSettings();
 }
 
@@ -340,6 +378,8 @@ function renderRequests(){
         </div>
         <div class="meta">${r.user ? esc(r.user.fullName)+' · '+esc(r.user.phone) : ''}</div>
         ${r.contactPhone ? `<div class="meta">Клиент указал для связи: <b style="color:var(--text);">${esc(r.contactPhone)}</b></div>` : ''}
+        ${r.clientName ? `<div class="meta">Ф.И.О. клиента: <b style="color:var(--text);">${esc(r.clientName)}</b></div>` : ''}
+        ${r.paymentBank ? `<div class="meta">Банк оплаты: <b style="color:var(--text);">${esc(r.paymentBank)}</b></div>` : ''}
         <div class="meta">Тариф: <b style="color:var(--text);">${r.plan ? esc(r.plan.name)+' · '+r.plan.price.toLocaleString('ru-RU')+' ₽/мес · до '+r.plan.carLimit+' машин' : esc(r.planId)}</b></div>
         <div class="meta">Срок: <b style="color:var(--text);">${r.months||1} мес.</b>${r.amount ? ' · к оплате: <b style="color:var(--accent);">'+r.amount.toLocaleString('ru-RU')+' ₽</b>' : ''}</div>
         <div class="meta">Заявка от ${fmtDate(r.createdAt)}${r.resolvedAt ? ' · обработана '+fmtDate(r.resolvedAt)+(r.monthsGranted?' · +'+r.monthsGranted+' мес.':'') : ''}</div>
@@ -372,6 +412,76 @@ async function rejectRequest(id){
     showToast('Заявка отклонена');
     loadRequests();
   }catch(e){ showToast(e.message || 'Не удалось отклонить заявку'); }
+}
+
+/* ---- Тех. поддержка: обращения клиентов ---- */
+async function loadSupport(){
+  try{
+    const r = await api('/admin/support');
+    STATE.support = r.tickets;
+    STATE.openSupportCount = r.openCount;
+    renderNav();
+    renderSupport();
+  }catch(e){
+    showToast(e.message || 'Не удалось загрузить обращения');
+  }
+}
+function renderSupport(){
+  const el = document.getElementById('supportList');
+  if(!STATE.support.length){
+    el.innerHTML = `<div class="empty-note">Обращений пока нет</div>`;
+    return;
+  }
+  el.innerHTML = STATE.support.map(t=>`
+    <div class="req-card">
+      <div class="main">
+        <div class="company">${esc(t.user ? t.user.companyName : 'Аккаунт удалён')}
+          <span class="req-status ${t.status==='open'?'pending':'approved'}">${t.status==='open'?'Открыто':'Решено'}</span>
+        </div>
+        <div class="meta">${t.user ? esc(t.user.fullName)+' · '+esc(t.user.phone) : ''}</div>
+        ${t.contactPhone ? `<div class="meta">Клиент указал для связи: <b style="color:var(--text);">${esc(t.contactPhone)}</b></div>` : ''}
+        <div class="meta" style="white-space:pre-wrap;color:var(--text);margin-top:4px;">${esc(t.message)}</div>
+        <div class="meta">Обращение от ${fmtDate(t.createdAt)}${t.closedAt ? ' · решено '+fmtDate(t.closedAt) : ''}</div>
+      </div>
+      ${t.status==='open' ? `
+        <div class="actions">
+          <button class="btn primary sm" onclick="closeSupportTicket('${t.id}')">Отметить решённым</button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+async function closeSupportTicket(id){
+  try{
+    await api('/admin/support/'+id+'/close', { method:'POST' });
+    showToast('Обращение отмечено решённым');
+    loadSupport();
+  }catch(e){ showToast(e.message || 'Не удалось обновить обращение'); }
+}
+
+/* ---- Новость всем клиентам (push-рассылка) ---- */
+function openBroadcastModal(){
+  document.getElementById('modalBox').innerHTML = `
+    <div class="modal-head"><h3>Новость всем клиентам</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="hint" style="margin-bottom:14px;">Уведомление придёт push-сообщением в системный центр уведомлений телефона — тем клиентам, у кого включены push-уведомления в приложении.</div>
+      <div class="field"><label>Заголовок</label><input id="bc_title" placeholder="XCAR — новость" value="XCAR — новость"></div>
+      <div class="field"><label>Текст новости</label><textarea id="bc_body" style="min-height:110px;" placeholder="Например: с 1 числа обновляем тарифы..."></textarea></div>
+      <button class="btn primary" style="width:100%;" onclick="submitBroadcast()">Отправить всем</button>
+    </div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+async function submitBroadcast(){
+  const title = document.getElementById('bc_title').value.trim();
+  const body = document.getElementById('bc_body').value.trim();
+  if(!body){ showToast('Введите текст новости'); return; }
+  if(!confirm('Отправить это уведомление всем клиентам с включёнными push-уведомлениями?')) return;
+  try{
+    const r = await api('/admin/broadcast', { method:'POST', body: JSON.stringify({ title, body }) });
+    showToast(`Отправлено: ${r.sent} из ${r.usersNotified} подписанных клиентов`);
+    closeModal();
+  }catch(e){ showToast(e.message || 'Не удалось отправить новость'); }
 }
 
 /* ---- Настройки: тарифы, пробный период, реквизиты для перевода ---- */
@@ -530,9 +640,9 @@ function renderUsers(){
     return;
   }
   el.innerHTML = list.map(u=>`
-    <div class="acc-card">
+    <div class="acc-card" style="${u.blocked?'opacity:.7;border-color:var(--danger);':''}">
       <div class="main">
-        <div class="company">${esc(u.companyName)}${u.createdByAdmin?' <span style="color:var(--text-faint);font-weight:400;font-size:11px;">· создан вручную</span>':''}</div>
+        <div class="company">${esc(u.companyName)}${u.createdByAdmin?' <span style="color:var(--text-faint);font-weight:400;font-size:11px;">· создан вручную</span>':''}${u.blocked?' <span class="sub-badge expired" style="margin-left:4px;">🚫 Заблокирован</span>':''}</div>
         <div class="contact">${esc(u.fullName)} · ${esc(u.phone)}${u.email?' · '+esc(u.email):''}</div>
         <div style="margin-top:6px;">${subBadgeHtml(u.subscription)}</div>
       </div>
@@ -544,6 +654,9 @@ function renderUsers(){
       <div class="date">${fmtDate(u.createdAt)}</div>
       <div class="actions">
         <button class="btn ghost sm" onclick="openUserModal('${u.id}')">Открыть</button>
+        ${u.blocked
+          ? `<button class="btn ghost sm" onclick="toggleBlockUser('${u.id}',false)">Разблокировать</button>`
+          : `<button class="btn danger sm" onclick="toggleBlockUser('${u.id}',true)">Заблокировать</button>`}
       </div>
     </div>
   `).join('');
@@ -598,7 +711,7 @@ function renderUserModal(u){
     { id:'business', name:'Бизнес', price:4500, carLimit:15 }
   ];
   document.getElementById('modalBox').innerHTML = `
-    <div class="modal-head"><h3>${esc(u.companyName)}</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-head"><h3>${esc(u.companyName)}${u.blocked?' <span class="sub-badge expired" style="margin-left:6px;">🚫 Заблокирован</span>':''}</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
     <div class="modal-body">
       <div class="field"><label>Имя владельца</label><input id="u_name" value="${esc(u.fullName)}"></div>
       <div class="field"><label>Название компании</label><input id="u_company" value="${esc(u.companyName)}"></div>
@@ -607,6 +720,9 @@ function renderUserModal(u){
       <div style="display:flex;gap:8px;margin:4px 0 18px;flex-wrap:wrap;">
         <button class="btn primary sm" onclick="submitUserEdit('${u.id}')">Сохранить</button>
         <button class="btn ghost sm" onclick="promptResetPassword('${u.id}')">Сбросить пароль</button>
+        ${u.blocked
+          ? `<button class="btn ghost sm" onclick="toggleBlockUser('${u.id}',false)">Разблокировать</button>`
+          : `<button class="btn danger sm" onclick="toggleBlockUser('${u.id}',true)">Заблокировать</button>`}
         <button class="btn danger sm" onclick="confirmDeleteUser('${u.id}')">Удалить аккаунт</button>
       </div>
 
@@ -699,6 +815,24 @@ async function confirmDeleteUser(userId){
     closeModal();
     loadAll();
   }catch(e){ showToast(e.message || 'Не удалось удалить'); }
+}
+// Раздел 20: блокировка нежелательного клиента — запрещает и вход, и
+// использование уже открытого приложения (см. lib/auth.js/routes/auth.js).
+// Вызывается и с карточки в списке аккаунтов, и изнутри модалки аккаунта.
+async function toggleBlockUser(userId, blocked){
+  const msg = blocked
+    ? 'Заблокировать этот аккаунт? Клиент не сможет войти и его открытое приложение сразу перестанет синхронизироваться.'
+    : 'Снять блокировку с этого аккаунта?';
+  if(!confirm(msg)) return;
+  try{
+    await api('/admin/users/'+userId+'/block', { method:'PUT', body: JSON.stringify({ blocked }) });
+    showToast(blocked ? 'Аккаунт заблокирован' : 'Блокировка снята');
+    loadAll();
+    if(STATE.openUserId===userId){
+      const r = await api('/admin/users/'+userId);
+      renderUserModal(r.user);
+    }
+  }catch(e){ showToast(e.message || 'Не удалось изменить блокировку'); }
 }
 
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }

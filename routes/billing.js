@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { readUsers, writeUsers } = require('../lib/store');
 const { readConfig, getPlanById, computeTariffAmount } = require('../lib/config');
-const { publicSubscription, ensureSubscription } = require('../lib/subscription');
+const { publicSubscription, ensureSubscription, extendSubscription } = require('../lib/subscription');
 const { createRequest } = require('../lib/requests');
 const { authMiddleware } = require('../lib/auth');
 
@@ -40,14 +40,14 @@ router.get('/status', async (req, res) => {
 
 const ALLOWED_MONTHS = [1, 3, 6, 12];
 
-// POST /api/billing/request  { planId, months, contactPhone }
+// POST /api/billing/request  { planId, months, contactPhone, clientName, paymentBank }
 // Пользователь выбрал/решил продлить тариф на определённый срок (1/3/6/12 мес) —
 // фиксируем заявку (администратор увидит её в /admin как уведомление, со счётчиком
 // новых заявок) и сразу отдаём реквизиты для перевода (в т.ч. QR-код, если админ его
 // загрузил) вместе с посчитанной на сервере суммой (цена тарифа × количество месяцев —
 // не доверяем сумме, присланной клиентом).
 router.post('/request', requestLimiter, async (req, res) => {
-  const { planId, months, contactPhone } = req.body || {};
+  const { planId, months, contactPhone, clientName, paymentBank } = req.body || {};
   const cfg = await readConfig();
   const plan = getPlanById(cfg, planId);
   if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
@@ -61,8 +61,30 @@ router.post('/request', requestLimiter, async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
 
   const amount = computeTariffAmount(plan.price, m);
-  const request = await createRequest(user.id, plan.id, m, contactPhone);
+  const request = await createRequest(user.id, plan.id, m, contactPhone, clientName, paymentBank);
   res.json({ ok: true, request, plan, months: m, amount, payment: cfg.payment });
+});
+
+// POST /api/billing/activate-free  { planId }
+// Активация бесплатного тарифа (0 ₽) — в отличие от /request, не создаёт
+// заявку и не ждёт подтверждения администратора: подписка продлевается
+// сразу же, на много лет вперёд (фактически бессрочно). Доступно только для
+// тарифов с price === 0 — эта проверка на сервере обязательна: без неё
+// подделанный клиентом запрос с planId платного тарифа мог бы получить его
+// бесплатно, в обход обычного сценария оплаты и подтверждения заявки.
+router.post('/activate-free', requestLimiter, async (req, res) => {
+  const { planId } = req.body || {};
+  const cfg = await readConfig();
+  const plan = getPlanById(cfg, planId);
+  if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
+  if (plan.price !== 0) return res.status(400).json({ error: 'Этот тариф не бесплатный' });
+
+  const { usersData, user } = await getSelfUser(req);
+  if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+
+  user.subscription = extendSubscription(user.subscription, plan.id, 1200, cfg);
+  await writeUsers(usersData);
+  res.json({ ok: true, subscription: publicSubscription(user.subscription, cfg) });
 });
 
 module.exports = router;
