@@ -124,6 +124,47 @@ main{max-width:1100px;margin:0 auto;padding:22px 18px 60px;}
 .section-block{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 18px 6px;margin-bottom:18px;}
 .section-block h3{margin:0 0 4px;font-size:16px;}
 .section-block .desc{font-size:12.5px;color:var(--text-dim);margin-bottom:16px;line-height:1.5;}
+
+/* ---- Дни подписки ---- */
+.days-box{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:18px;}
+.days-top{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+.days-big{font-family:var(--font-display);font-weight:700;font-size:40px;line-height:1;color:var(--accent);min-width:64px;text-align:center;}
+.days-big.expired{color:var(--danger);}
+.days-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.days-row input{width:90px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 10px;color:var(--text);font-size:15px;text-align:center;font-weight:700;outline:none;}
+.chip-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;}
+.chip-btn:hover{border-color:var(--accent);color:var(--accent);}
+/* ---- Новости ---- */
+.news-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:12px;}
+.news-card.off{opacity:.55;}
+.news-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+.news-title{font-weight:700;font-size:16px;}
+.news-body{font-size:13px;color:var(--text-dim);white-space:pre-wrap;line-height:1.55;margin-top:6px;}
+.news-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--text-dim);align-items:center;}
+.stars{color:var(--accent);letter-spacing:1px;}
+.star-bar{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--text-dim);}
+.star-bar .bar{width:110px;height:6px;border-radius:6px;background:var(--surface-3);overflow:hidden;}
+.star-bar .bar i{display:block;height:100%;background:var(--accent);}
+.news-rate-big{font-family:var(--font-display);font-weight:700;font-size:28px;color:var(--accent);}
+/* ---- Группа ---- */
+.chat-layout{display:grid;grid-template-columns:1fr 300px;gap:16px;}
+@media (max-width:820px){.chat-layout{grid-template-columns:1fr;}}
+.chat-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;height:560px;overflow:hidden;}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.chat-msg{max-width:78%;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:8px 11px;align-self:flex-start;position:relative;}
+.chat-msg.admin{align-self:flex-end;background:rgba(242,169,59,0.12);border-color:rgba(242,169,59,0.4);}
+.chat-msg .who{font-size:11.5px;font-weight:700;color:var(--accent-2);}
+.chat-msg.admin .who{color:var(--accent);}
+.chat-msg .txt{font-size:13.5px;white-space:pre-wrap;word-break:break-word;margin-top:2px;}
+.chat-msg .tm{font-size:10.5px;color:var(--text-faint);margin-top:3px;display:flex;gap:10px;}
+.chat-msg .tm a{color:var(--danger);cursor:pointer;}
+.chat-input{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);}
+.chat-input textarea{flex:1;min-height:44px;max-height:120px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;color:var(--text);font-size:14px;resize:vertical;outline:none;font-family:var(--font-body);}
+.member{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.member .nm{flex:1;min-width:0;font-size:13px;font-weight:600;}
+.member .nm small{display:block;color:var(--text-faint);font-weight:500;font-size:11px;}
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;margin-bottom:12px;border:1px solid var(--border);background:var(--surface-2);}
+.switch-row.on{background:var(--danger-dim);border-color:rgba(232,96,76,0.35);}
 </style>
 </head>
 <body>
@@ -147,7 +188,7 @@ main{max-width:1100px;margin:0 auto;padding:22px 18px 60px;}
   <header class="top">
     <div class="brand"><span class="disp">XCAR</span>&nbsp;<span style="color:var(--text-dim);font-size:13px;">Админ-панель</span></div>
     <div style="display:flex;gap:8px;">
-      <button class="btn ghost sm" onclick="openBroadcastModal()" title="Отправить новость push-уведомлением всем клиентам">📢 Новость всем</button>
+      <button class="btn ghost sm" onclick="openNewsModal()" title="Новость появится у всех клиентов окном по центру экрана">📢 Новость всем</button>
       <button class="btn ghost sm" onclick="doLogout()">Выйти</button>
     </div>
   </header>
@@ -175,6 +216,34 @@ main{max-width:1100px;margin:0 auto;padding:22px 18px 60px;}
         <button class="btn ghost" onclick="loadSupport()">Обновить</button>
       </div>
       <div id="supportList"></div>
+    </div>
+    <div id="viewNews" style="display:none;">
+      <div class="toolbar">
+        <div style="flex:1;font-size:13px;color:var(--text-dim);align-self:center;">Новость появляется у каждого клиента окном по центру экрана при следующем открытии приложения. Клиент может оценить её от 1 до 5 звёзд.</div>
+        <button class="btn primary" onclick="openNewsModal()">+ Новая новость</button>
+        <button class="btn ghost" onclick="loadNews()">Обновить</button>
+      </div>
+      <div id="newsList"></div>
+    </div>
+    <div id="viewChat" style="display:none;">
+      <div class="chat-layout">
+        <div>
+          <div class="switch-row" id="chatClosedRow"></div>
+          <div class="chat-panel">
+            <div class="chat-msgs" id="adminChatMsgs"></div>
+            <div class="chat-input">
+              <textarea id="adminChatText" placeholder="Сообщение от администратора… (Ctrl+Enter — отправить)" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){sendAdminChat();}"></textarea>
+              <button class="btn primary" onclick="sendAdminChat()">Отправить</button>
+            </div>
+          </div>
+        </div>
+        <div class="section-block" style="padding-bottom:12px;">
+          <h3>Участники</h3>
+          <div class="desc">Кто писал в группу. «Запретить» — человек больше не сможет писать (читать сможет).</div>
+          <div id="chatMembers"></div>
+          <button class="btn danger sm" style="margin-top:14px;width:100%;" onclick="clearAdminChat()">Очистить всю переписку</button>
+        </div>
+      </div>
     </div>
     <div id="viewSettings" style="display:none;"></div>
   </main>
@@ -294,6 +363,8 @@ function renderNav(){
     ['accounts','Аккаунты',null],
     ['requests','Заявки на оплату', STATE.pendingCount],
     ['support','Поддержка', STATE.openSupportCount],
+    ['news','Новости',null],
+    ['chat','Общая группа',null],
     ['settings','Настройки',null]
   ];
   document.getElementById('sectionNav').innerHTML = tabs.map(([key,label,badge])=>`
@@ -309,6 +380,11 @@ function switchView(view){
   document.getElementById('viewRequests').style.display = view==='requests' ? '' : 'none';
   document.getElementById('viewSupport').style.display = view==='support' ? '' : 'none';
   document.getElementById('viewSettings').style.display = view==='settings' ? '' : 'none';
+  document.getElementById('viewNews').style.display = view==='news' ? '' : 'none';
+  document.getElementById('viewChat').style.display = view==='chat' ? '' : 'none';
+  clearInterval(window.__chatPollTimer);
+  if(view==='news') loadNews();
+  if(view==='chat'){ loadAdminChat(true); window.__chatPollTimer = setInterval(()=>{ if(getToken() && STATE.view==='chat') loadAdminChat(false); }, 5000); }
   if(view==='requests') loadRequests();
   if(view==='support') loadSupport();
   if(view==='settings') loadSettings();
@@ -736,6 +812,26 @@ function renderUserModal(u){
         <button class="btn primary sm" onclick="extendUserSubscription('${u.id}')">Продлить/выдать</button>
       </div>
 
+      <div class="section-title" style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Дни подписки</div>
+      <div class="days-box">
+        <div class="days-top">
+          <div class="days-big ${u.subscription && u.subscription.status==='expired'?'expired':''}">${u.subscription ? u.subscription.daysLeft : 0}</div>
+          <div style="font-size:12.5px;color:var(--text-dim);line-height:1.5;">дней осталось${u.subscription && u.subscription.expiresAt ? '<br>до <b style="color:var(--text);">'+fmtDate(u.subscription.expiresAt)+'</b>' : ''}<br>${u.subscription && u.subscription.planName ? esc(u.subscription.planName) : 'Без тарифа'}</div>
+        </div>
+        <div class="days-row" style="margin-bottom:10px;">
+          <input id="u_days" type="number" min="0" value="30">
+          <button class="btn primary sm" onclick="setUserDays('${u.id}','set')" title="Подписка будет действовать ровно столько дней, начиная с сегодня">Установить ровно</button>
+          <button class="btn ghost sm" onclick="setUserDays('${u.id}','add')">+ Добавить</button>
+          <button class="btn ghost sm" onclick="setUserDays('${u.id}','sub')">− Убавить</button>
+        </div>
+        <div class="days-row">
+          <span style="font-size:11.5px;color:var(--text-faint);">Быстро:</span>
+          ${[1,7,14,30,90,365].map(d=>`<button class="chip-btn" onclick="quickUserDays('${u.id}',${d})">+${d} дн.</button>`).join('')}
+          <button class="chip-btn" style="color:var(--danger);" onclick="endUserSubscription('${u.id}')">Завершить сейчас</button>
+        </div>
+        <div class="hint">«Установить ровно» — подписка будет действовать указанное число дней с сегодняшнего дня. «Добавить/Убавить» — меняет текущую дату окончания. Тариф и лимит машин не меняются (их меняет блок «Тариф» выше).</div>
+      </div>
+
       <div class="section-title" style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Данные аккаунта</div>
       <div class="tabs" id="dataTabs"></div>
       <div class="field"><textarea id="dataEditor" spellcheck="false"></textarea></div>
@@ -833,6 +929,163 @@ async function toggleBlockUser(userId, blocked){
       renderUserModal(r.user);
     }
   }catch(e){ showToast(e.message || 'Не удалось изменить блокировку'); }
+}
+
+
+/* ---- Дни подписки ---- */
+async function applyUserDays(userId, mode, days){
+  try{
+    const r = await api('/admin/users/'+userId+'/subscription-days', { method:'PUT', body: JSON.stringify({ mode, days }) });
+    const s = r.user.subscription || {};
+    showToast(s.status==='expired' ? 'Подписка завершена' : 'Готово: осталось '+s.daysLeft+' дн.');
+    const store = STATE.openUserStore; renderUserModal(r.user); STATE.openUserStore = store;
+    loadAll();
+  }catch(e){ showToast(e.message || 'Не удалось изменить дни'); }
+}
+function setUserDays(userId, mode){
+  const n = Math.round(Number(document.getElementById('u_days').value));
+  if(!Number.isFinite(n) || n < 0){ showToast('Укажите число дней'); return; }
+  if(mode==='sub') return applyUserDays(userId, 'add', -n);
+  if(mode==='set' && n===0) return endUserSubscription(userId);
+  applyUserDays(userId, mode, n);
+}
+function quickUserDays(userId, d){ applyUserDays(userId, 'add', d); }
+function endUserSubscription(userId){
+  if(!confirm('Завершить подписку прямо сейчас? Клиенту будут недоступны добавление расходов, доходов и новые договоры.')) return;
+  applyUserDays(userId, 'set', 0);
+}
+
+/* ---- Новости ---- */
+STATE.news = []; STATE.newsUsers = 0;
+function starsText(n){ n = Math.round(n||0); return '★'.repeat(n) + '☆'.repeat(5-n); }
+async function loadNews(){
+  try{
+    const r = await api('/admin/news');
+    STATE.news = r.news; STATE.newsUsers = r.usersCount;
+    renderNews();
+  }catch(e){ showToast(e.message || 'Не удалось загрузить новости'); }
+}
+function renderNews(){
+  const el = document.getElementById('newsList');
+  if(!STATE.news.length){ el.innerHTML = `<div class="empty-note">Новостей пока нет — нажмите «+ Новая новость»</div>`; return; }
+  el.innerHTML = STATE.news.map(n=>{
+    const r = n.rating; const max = Math.max(1, ...r.dist);
+    return `<div class="news-card ${n.active?'':'off'}">
+      <div class="news-head">
+        <div style="min-width:0;flex:1;">
+          <div class="news-title">${esc(n.title)} ${n.active?'':'<span class="sub-badge expired" style="margin-left:6px;">скрыта</span>'}</div>
+          <div class="news-body">${esc(n.body)}</div>
+        </div>
+        <div style="text-align:center;flex-shrink:0;">
+          <div class="news-rate-big">${r.count ? r.avg.toFixed(1) : '—'}</div>
+          <div class="stars">${starsText(r.avg)}</div>
+          <div style="font-size:11px;color:var(--text-faint);">${r.count} оцен.</div>
+        </div>
+      </div>
+      <div class="news-meta">
+        <span>📅 ${fmtDate(n.createdAt)}</span>
+        <span>👁 Просмотрели: <b style="color:var(--text);">${n.seenCount}</b> из ${STATE.newsUsers}</span>
+      </div>
+      ${r.count ? `<div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">${[5,4,3,2,1].map(st=>`<div class="star-bar"><span style="width:26px;">${st}★</span><span class="bar"><i style="width:${Math.round(r.dist[st-1]/max*100)}%"></i></span><span>${r.dist[st-1]}</span></div>`).join('')}</div>` : ''}
+      ${n.ratings.length ? `<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12.5px;color:var(--text-dim);">Кто как оценил (${n.ratings.length})</summary>
+        <div style="margin-top:6px;">${n.ratings.sort((a,b)=>b.stars-a.stars).map(x=>`<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--border);"><span>${esc(x.name)}</span><span class="stars">${starsText(x.stars)}</span></div>`).join('')}</div></details>` : ''}
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn ghost sm" onclick="toggleNews('${n.id}',${!n.active})">${n.active?'Скрыть у клиентов':'Показывать снова'}</button>
+        <button class="btn danger sm" onclick="deleteNewsItem('${n.id}')">Удалить</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openNewsModal(){
+  document.getElementById('modalBox').innerHTML = `
+    <div class="modal-head"><h3>📢 Новость всем клиентам</h3><button class="icon-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="hint" style="margin:0 0 14px;">Новость откроется у каждого клиента <b>окном по центру экрана</b> в приложении, и он сможет поставить оценку от 1 до 5 звёзд. Оценки видны в разделе «Новости».</div>
+      <div class="field"><label>Заголовок</label><input id="nw_title" placeholder="Например: Новое обновление XCAR"></div>
+      <div class="field"><label>Текст новости</label><textarea id="nw_body" style="min-height:130px;font-family:var(--font-body);font-size:14px;" placeholder="Что нового…"></textarea></div>
+      <label style="display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:16px;cursor:pointer;"><input type="checkbox" id="nw_push" checked style="width:18px;height:18px;"> Дополнительно отправить push-уведомление на телефоны</label>
+      <button class="btn primary" style="width:100%;" onclick="submitNews()">Опубликовать</button>
+    </div>`;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+async function submitNews(){
+  const title = document.getElementById('nw_title').value.trim();
+  const body = document.getElementById('nw_body').value.trim();
+  const push = document.getElementById('nw_push').checked;
+  if(!body){ showToast('Введите текст новости'); return; }
+  try{
+    const r = await api('/admin/news', { method:'POST', body: JSON.stringify({ title, body, push }) });
+    showToast('Новость опубликована' + (push ? ' · push: '+r.pushSent : ''));
+    closeModal(); switchView('news');
+  }catch(e){ showToast(e.message || 'Не удалось опубликовать'); }
+}
+async function toggleNews(id, active){
+  try{ await api('/admin/news/'+id, { method:'PUT', body: JSON.stringify({ active }) }); loadNews(); }
+  catch(e){ showToast(e.message); }
+}
+async function deleteNewsItem(id){
+  if(!confirm('Удалить новость вместе с оценками?')) return;
+  try{ await api('/admin/news/'+id, { method:'DELETE' }); showToast('Новость удалена'); loadNews(); }
+  catch(e){ showToast(e.message); }
+}
+
+/* ---- Общая группа ---- */
+STATE.chat = { closed:false, members:[], messages:[] };
+async function loadAdminChat(scrollDown){
+  try{
+    const r = await api('/admin/chat');
+    const box = document.getElementById('adminChatMsgs');
+    const atBottom = box && (box.scrollHeight - box.scrollTop - box.clientHeight < 60);
+    const changed = JSON.stringify(r.messages.map(m=>m.id)) !== JSON.stringify(STATE.chat.messages.map(m=>m.id)) || r.closed!==STATE.chat.closed || JSON.stringify(r.members)!==JSON.stringify(STATE.chat.members);
+    STATE.chat = r;
+    if(changed || scrollDown) renderAdminChat(scrollDown || atBottom);
+  }catch(e){ if(scrollDown) showToast(e.message || 'Не удалось загрузить группу'); }
+}
+function renderAdminChat(scroll){
+  const c = STATE.chat;
+  document.getElementById('chatClosedRow').className = 'switch-row' + (c.closed ? ' on' : '');
+  document.getElementById('chatClosedRow').innerHTML = `
+    <div><div style="font-weight:700;font-size:14px;">${c.closed ? '🔒 Группа закрыта — пишете только вы' : '💬 Группа открыта — пишут все пользователи'}</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">${c.closed ? 'Клиенты видят сообщения, но отправлять не могут.' : 'Любой пользователь XCAR может написать в группу.'}</div></div>
+    <button class="btn ${c.closed?'primary':'danger'} sm" onclick="setChatClosed(${!c.closed})">${c.closed ? 'Открыть для всех' : 'Закрыть чат'}</button>`;
+  const bans = new Set(c.bans||[]);
+  const box = document.getElementById('adminChatMsgs');
+  box.innerHTML = c.messages.length ? c.messages.map(m=>`
+    <div class="chat-msg ${m.fromAdmin?'admin':''}">
+      <div class="who">${esc(m.name)}${m.userId && bans.has(m.userId) ? ' <span style="color:var(--danger);">· запрещено писать</span>' : ''}</div>
+      <div class="txt">${esc(m.text)}</div>
+      <div class="tm"><span>${fmtDate(m.createdAt)}</span><a onclick="deleteChatMsg('${m.id}')">удалить</a>${m.userId && !bans.has(m.userId) ? `<a onclick="banChatUser('${m.userId}',true)">запретить писать</a>` : ''}</div>
+    </div>`).join('') : `<div class="empty-note">Сообщений пока нет</div>`;
+  if(scroll) box.scrollTop = box.scrollHeight;
+  document.getElementById('chatMembers').innerHTML = c.members.length ? c.members.map(m=>`
+    <div class="member">
+      <div class="nm">${esc(m.name)}<small>${esc(m.phone||'')} · ${m.messages} сообщ.</small></div>
+      ${m.banned ? `<button class="btn ghost sm" onclick="banChatUser('${m.userId}',false)">Разрешить</button>` : `<button class="btn danger sm" onclick="banChatUser('${m.userId}',true)">Запретить</button>`}
+    </div>`).join('') : `<div style="font-size:12.5px;color:var(--text-faint);">Пока никто не писал</div>`;
+}
+async function sendAdminChat(){
+  const ta = document.getElementById('adminChatText');
+  const text = ta.value.trim(); if(!text) return;
+  try{ await api('/admin/chat', { method:'POST', body: JSON.stringify({ text }) }); ta.value=''; loadAdminChat(true); }
+  catch(e){ showToast(e.message); }
+}
+async function setChatClosed(closed){
+  try{ await api('/admin/chat/settings', { method:'PUT', body: JSON.stringify({ closed }) }); showToast(closed?'Группа закрыта':'Группа открыта'); loadAdminChat(false); }
+  catch(e){ showToast(e.message); }
+}
+async function banChatUser(userId, banned){
+  if(banned && !confirm('Запретить этому пользователю писать в группу?')) return;
+  try{ await api('/admin/chat/ban', { method:'POST', body: JSON.stringify({ userId, banned }) }); showToast(banned?'Пользователю запрещено писать':'Пользователю снова можно писать'); loadAdminChat(false); }
+  catch(e){ showToast(e.message); }
+}
+async function deleteChatMsg(id){
+  try{ await api('/admin/chat/messages/'+id, { method:'DELETE' }); loadAdminChat(false); }
+  catch(e){ showToast(e.message); }
+}
+async function clearAdminChat(){
+  if(!confirm('Удалить ВСЮ переписку группы? Это нельзя отменить.')) return;
+  try{ await api('/admin/chat/clear', { method:'POST' }); showToast('Переписка очищена'); loadAdminChat(true); }
+  catch(e){ showToast(e.message); }
 }
 
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }

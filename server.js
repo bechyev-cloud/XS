@@ -13,6 +13,7 @@ const adminRoutes = require('./routes/admin');
 const billingRoutes = require('./routes/billing');
 const pushRoutes = require('./routes/push');
 const supportRoutes = require('./routes/support');
+const communityRoutes = require('./routes/community');
 const { startNotifier } = require('./lib/notifier');
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/community', communityRoutes);
 
 // Супер-админ панель — отдаётся прямо этим сервером, без отдельного хостинга.
 // Откройте https://ваш-сервер/admin в браузере.

@@ -10,6 +10,7 @@ const { readConfig, writeConfig, computeTariffAmount } = require('../lib/config'
 const { listRequests, resolveRequest } = require('../lib/requests');
 const { listTickets, closeTicket } = require('../lib/support');
 const push = require('../lib/push');
+const community = require('../lib/community');
 const { extendSubscription, publicSubscription, ensureSubscription, trialSubscription } = require('../lib/subscription');
 
 const router = express.Router();
@@ -423,6 +424,117 @@ router.post('/broadcast', async (req, res) => {
     }
   }
   res.json({ ok: true, usersNotified: userIds.length, sent });
+});
+
+// PUT /api/admin/users/:id/subscription-days — точно задать дни подписки.
+//   { mode:'set', days }  — подписка будет действовать ровно N дней с сегодняшнего
+//                          дня (0 — закончить прямо сейчас);
+//   { mode:'add', days }  — добавить (или убавить, если число отрицательное)
+//                          N дней к текущей дате окончания;
+//   planId (необязательно) — заодно сменить тариф и лимит машин.
+router.put('/users/:id/subscription-days', async (req, res) => {
+  const usersData = await readUsers();
+  const user = usersData.users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'Аккаунт не найден' });
+  const cfg = await readConfig();
+  ensureSubscription(user, cfg);
+  const { mode, planId } = req.body || {};
+  const days = Math.round(Number((req.body || {}).days));
+  if (!Number.isFinite(days) || Math.abs(days) > 3650) return res.status(400).json({ error: 'Укажите количество дней (до 3650)' });
+  const sub = Object.assign({}, user.subscription);
+  const now = Date.now();
+  if (mode === 'add') {
+    const cur = sub.expiresAt ? new Date(sub.expiresAt).getTime() : now;
+    const base = days >= 0 ? Math.max(now, cur) : cur;
+    sub.expiresAt = new Date(base + days * 86400000).toISOString();
+  } else {
+    if (days < 0) return res.status(400).json({ error: 'Число дней не может быть отрицательным' });
+    // ровно N дней: до конца N-го дня, чтобы в приложении показывалось «N дн.»
+    sub.expiresAt = days === 0 ? new Date(now - 1000).toISOString() : new Date(now + days * 86400000 - 60000).toISOString();
+  }
+  if (planId) {
+    const plan = (cfg.plans || []).find(p => p.id === planId);
+    if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
+    sub.planId = plan.id; sub.carLimit = plan.carLimit;
+  }
+  user.subscription = sub;
+  await writeUsers(usersData);
+  res.json({ user: publicUser(user, cfg) });
+});
+
+// ---- Новости (окно в приложении + оценка 1–5 звёзд) ----
+router.get('/news', async (req, res) => {
+  const [news, usersData] = await Promise.all([community.listNewsAdmin(), readUsers()]);
+  const names = {};
+  usersData.users.forEach(u => { names[u.id] = u.companyName || u.fullName || u.phone; });
+  res.json({
+    usersCount: usersData.users.length,
+    news: news.map(n => Object.assign({}, n, {
+      ratings: Object.entries(n.ratings).map(([uid, stars]) => ({ userId: uid, name: names[uid] || 'Аккаунт удалён', stars }))
+    }))
+  });
+});
+router.post('/news', async (req, res) => {
+  const { title, body, push: alsoPush } = req.body || {};
+  if (!String(body || '').trim()) return res.status(400).json({ error: 'Введите текст новости' });
+  const n = await community.createNews(title, body);
+  let sent = 0;
+  if (alsoPush) {
+    for (const userId of push.allUserIdsWithSubs()) {
+      try { const r = await push.sendToUser(userId, { title: n.title, body: n.body.slice(0, 300), tag: 'news-' + n.id }); sent += r.sent || 0; }
+      catch (e) { console.error('news push', e && e.message); }
+    }
+  }
+  res.json({ news: n, pushSent: sent });
+});
+router.put('/news/:id', async (req, res) => {
+  const n = await community.updateNews(req.params.id, req.body || {});
+  if (!n) return res.status(404).json({ error: 'Новость не найдена' });
+  res.json({ ok: true });
+});
+router.delete('/news/:id', async (req, res) => {
+  const ok = await community.deleteNews(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Новость не найдена' });
+  res.json({ ok: true });
+});
+
+// ---- Общая группа ----
+router.get('/chat', async (req, res) => {
+  const [chat, usersData] = await Promise.all([community.readChat(), readUsers()]);
+  const bans = chat.bans || [];
+  // участники, писавшие в группу, + все забаненные — чтобы можно было разбанить
+  const seen = {};
+  chat.messages.forEach(m => { if (m.userId) seen[m.userId] = (seen[m.userId] || 0) + 1; });
+  const members = usersData.users
+    .filter(u => seen[u.id] || bans.includes(u.id))
+    .map(u => ({ userId: u.id, name: u.companyName || u.fullName || u.phone, fullName: u.fullName, phone: u.phone, messages: seen[u.id] || 0, banned: bans.includes(u.id) }))
+    .sort((a, b) => b.messages - a.messages);
+  res.json({ closed: !!chat.closed, bans, members, messages: chat.messages.slice(-300) });
+});
+router.post('/chat', async (req, res) => {
+  const text = String((req.body || {}).text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Введите сообщение' });
+  const m = await community.postMessage({ userId: null, name: 'Администратор XCAR', text, fromAdmin: true });
+  res.json({ ok: true, message: m });
+});
+router.put('/chat/settings', async (req, res) => {
+  const closed = await community.setChatClosed(!!(req.body || {}).closed);
+  res.json({ ok: true, closed });
+});
+router.post('/chat/ban', async (req, res) => {
+  const { userId, banned } = req.body || {};
+  if (!userId) return res.status(400).json({ error: 'Не указан пользователь' });
+  const bans = await community.setChatBan(userId, !!banned);
+  res.json({ ok: true, bans });
+});
+router.delete('/chat/messages/:id', async (req, res) => {
+  const ok = await community.deleteMessage(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Сообщение не найдено' });
+  res.json({ ok: true });
+});
+router.post('/chat/clear', async (req, res) => {
+  await community.clearChat();
+  res.json({ ok: true });
 });
 
 module.exports = router;
