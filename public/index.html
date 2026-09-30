@@ -15,6 +15,8 @@ window.XCAR_DEFAULT_API_BASE = 'https://xs-2.onrender.com/api';
 // автоматически меняется на новый (и остаётся в списке как резервный), чтобы
 // приложение и панель XCAR CONTROL работали с одним и тем же сервером.
 window.XCAR_OLD_DEFAULT_API_BASE = 'https://xcar-ser.onrender.com/api';
+// Встроенный резервный сервер в России — используется при автопереключении
+window.XCAR_RU_API_BASE = 'https://xss.relaxdev.ru/api';
 /* Сервер можно сменить прямо в приложении: Настройки → Серверы (в самом низу).
    Список серверов и выбранный активный хранятся на ЭТОМ устройстве
    (localStorage, ключ xcar_servers_v1). Здесь — синхронно, до загрузки
@@ -36,6 +38,16 @@ window.XCAR_OLD_DEFAULT_API_BASE = 'https://xcar-ser.onrender.com/api';
         if(s2.id==='main' && s2.url===old && !hasNew){ s2.url = nw; if(reserve && !reserve.url){ reserve.url = old; reserve.name = 'Старый сервер'; } }
       }
       cfg.migratedXs2 = true;
+      try{ localStorage.setItem('xcar_servers_v1', JSON.stringify(cfg)); }catch(e){}
+    }
+    if(cfg && cfg.servers && cfg.servers.length && !cfg.migratedRu){
+      var hasRu = false, rsv = null;
+      for(var k=0;k<cfg.servers.length;k++){ if(cfg.servers[k].url===window.XCAR_RU_API_BASE) hasRu = true; if(cfg.servers[k].id==='reserve') rsv = cfg.servers[k]; }
+      if(!hasRu){
+        if(rsv && !rsv.url){ rsv.url = window.XCAR_RU_API_BASE; rsv.name = 'Резервный сервер (Россия)'; }
+        else cfg.servers.push({ id:'ru', name:'Резервный сервер (Россия)', role:'reserve', url: window.XCAR_RU_API_BASE, enabled:true });
+      }
+      cfg.migratedRu = true;
       try{ localStorage.setItem('xcar_servers_v1', JSON.stringify(cfg)); }catch(e){}
     }
     if(cfg && cfg.servers && cfg.servers.length){
@@ -6531,10 +6543,11 @@ function srvDefaultConfig(){
     activeId: lan ? 'home' : 'main',
     autoFailover: true,
     migratedXs2: true,
+    migratedRu: true,
     servers: [
       { id:'home',    name:'Домашний Ubuntu',  role:'home',    url: lan, enabled:true },
       { id:'main',    name:'Основной сервер',  role:'main',    url: window.XCAR_DEFAULT_API_BASE || '', enabled:true },
-      { id:'reserve', name:'Резервный сервер', role:'reserve', url:'', enabled:true }
+      { id:'reserve', name:'Резервный сервер (Россия)', role:'reserve', url: window.XCAR_RU_API_BASE || '', enabled:true }
     ].map(x=>x).sort((a,b)=> lan ? 0 : (a.id==='home') - (b.id==='home'))
   };
 }
