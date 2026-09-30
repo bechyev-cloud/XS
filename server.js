@@ -1,4 +1,14 @@
-require('dotenv').config();
+// Настройки сервера берутся из переменных окружения (на Render — Environment).
+// Для запуска на своём компьютере/Ubuntu можно положить рядом файл server.env
+// (имя без точки в начале — такой файл нормально загружается на GitHub и виден
+// в Windows). Старый вариант с файлом .env тоже поддерживается. Уже заданные
+// переменные окружения файлами не перезаписываются.
+{
+  const dotenv = require('dotenv');
+  const p = require('path');
+  dotenv.config({ path: p.join(__dirname, 'server.env') });
+  dotenv.config({ path: p.join(__dirname, '.env') });
+}
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -14,6 +24,8 @@ const billingRoutes = require('./routes/billing');
 const pushRoutes = require('./routes/push');
 const supportRoutes = require('./routes/support');
 const communityRoutes = require('./routes/community');
+const control = require('./routes/control');
+const monitor = require('./lib/control/monitor');
 const { startNotifier } = require('./lib/notifier');
 
 const app = express();
@@ -22,13 +34,16 @@ if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
+app.use(monitor.middleware);
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 // Лимит побольше стандартного: в данных бывают фото машин / документов в base64.
 app.use(express.json({ limit: '30mb' }));
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, name: 'xcar-server', time: new Date().toISOString() });
+  res.json({ ok: true, name: 'xcar-server', time: new Date().toISOString(), version: monitor.VERSION, uptime: Math.round((Date.now() - monitor.STARTED) / 1000) });
 });
+// Краткие метрики нагрузки (без секретов) — для мониторинга из XCAR CONTROL другого сервера
+app.get('/api/health/metrics', (req, res) => { res.json(monitor.publicMetrics()); });
 
 app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
@@ -37,9 +52,19 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/control', control.router);
 
 // Супер-админ панель — отдаётся прямо этим сервером, без отдельного хостинга.
 // Откройте https://ваш-сервер/admin в браузере.
+// XCAR CONTROL — новая панель управления (PWA), папка ../xcar-control рядом с server/
+const CONTROL_DIR = [process.env.CONTROL_DIR, path.join(__dirname, '..', 'xcar-control'), path.join(__dirname, 'control-public')]
+  .filter(Boolean).find((d) => fs.existsSync(path.join(d, 'index.html')));
+if (CONTROL_DIR) {
+  // /control → /control/ (относительные пути PWA). Express по умолчанию не различает
+  // хвостовой слэш, поэтому проверяем исходный URL, иначе будет бесконечный редирект.
+  app.get('/control', (req, res, next) => (req.originalUrl.split('?')[0] === '/control' ? res.redirect(301, '/control/') : next()));
+  app.use('/control', express.static(CONTROL_DIR, { index: 'index.html', setHeaders(res, fp) { if (/(index\.html|sw\.js|manifest\.json)$/.test(fp)) res.setHeader('Cache-Control', 'no-cache'); } }));
+}
 app.get(['/admin', '/admin.html'], (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
@@ -95,3 +120,4 @@ app.listen(PORT, () => {
 // в 5 минут, пока процесс сервера жив (см. комментарий в lib/notifier.js
 // про "засыпание" на бесплатных тарифах хостинга).
 startNotifier(5 * 60 * 1000);
+control.startJobs();

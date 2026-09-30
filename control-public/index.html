@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>XCAR CONTROL</title>
+<meta name="description" content="XCAR CONTROL — Professional Fleet & Business Management">
+<meta name="theme-color" content="#060A15">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/app.css">
+<script>try{var p=localStorage.getItem('xc_theme')||'dark';document.documentElement.dataset.theme=p==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):p;}catch(e){}</script>
+</head>
+<body>
+<div id="app"><div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#93A0BF;font-family:system-ui">Загрузка XCAR CONTROL…</div></div>
+<noscript>Для работы XCAR CONTROL включите JavaScript.</noscript>
+<!-- Один обычный (не module) скрипт: панель открывается и с сервера, и двойным
+     кликом по index.html с компьютера (file://). Исходники — js/app.js и js/pages/*,
+     пересборка: build.cmd / build.sh -->
+<script src="js/app.bundle.js" defer></script>
+<script>
+// Если за 12 секунд панель не запустилась — показываем понятную причину вместо вечной «Загрузки»
+setTimeout(function(){var a=document.getElementById('app');if(a&&!window.__xcStarted){document.body.style.background='#060A15';a.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui;color:#C9D2E8;text-align:center"><div><h2 style="color:#fff">XCAR CONTROL не запустился</h2><p>Файл js/app.bundle.js не найден или повреждён. Распакуйте архив полностью (папки js, styles, assets должны лежать рядом с index.html) и откройте снова.</p><button onclick="location.reload()" style="margin-top:12px;height:44px;padding:0 22px;border:0;border-radius:12px;background:#E3262E;color:#fff;font-weight:700;cursor:pointer">Повторить</button></div></div>';}},12000);
+</script>
+</body>
+</html>

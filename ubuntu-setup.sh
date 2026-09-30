@@ -16,19 +16,20 @@ node -v
 echo "==> 2/5 Зависимости"
 npm install --omit=dev
 
-echo "==> 3/5 Настройки (.env)"
-if [ ! -f .env ]; then
-  cp .env.example .env
+echo "==> 3/5 Настройки (server.env)"
+if [ ! -f server.env ] && [ ! -f .env ]; then
+  cp server.env.example server.env
   ADMIN_PASS=$(openssl rand -hex 10 2>/dev/null || date +%s%N | sha256sum | head -c 20)
-  sed -i "s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=$ADMIN_PASS/" .env
+  sed -i "s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=$ADMIN_PASS/" server.env
   # Домашний сервер без reverse-proxy по умолчанию; через Cloudflare Tunnel — можно оставить true
   echo ""
-  echo "   Пароль для панели /admin: $ADMIN_PASS  (сохраните его! он в файле .env)"
+  echo "   Пароль для панели /admin: $ADMIN_PASS  (сохраните его! он в файле server.env)"
   echo ""
 else
-  echo "   .env уже есть — не трогаю"
+  echo "   файл настроек уже есть — не трогаю"
 fi
-PORT=$(grep -E '^PORT=' .env | cut -d= -f2); PORT=${PORT:-8080}
+ENVF=server.env; [ -f server.env ] || ENVF=.env
+PORT=$(grep -E '^PORT=' $ENVF | cut -d= -f2); PORT=${PORT:-8080}
 
 if [ -f ../xcarapp/index.html ]; then echo "   Приложение найдено (../xcarapp) — сервер будет раздавать его по Wi-Fi"; else echo "   ВНИМАНИЕ: рядом нет папки xcarapp — по Wi-Fi будет работать только API. Скопируйте всю папку XCAR."; fi
 if command -v ufw >/dev/null 2>&1 && sudo ufw status 2>/dev/null | grep -q "Status: active"; then sudo ufw allow "$PORT"/tcp >/dev/null && echo "   Порт $PORT открыт в ufw"; fi

@@ -6,7 +6,11 @@ const { authMiddleware } = require('../lib/auth');
 const { readUsers } = require('../lib/store');
 const c = require('../lib/community');
 
+const dm = require('../lib/control/messages');
+
 const router = express.Router();
+// ссылки на вложения открываются в <img>/новой вкладке — токен можно передать в ?t=
+router.use((req, res, next) => { if (!req.headers.authorization && req.query.t) req.headers.authorization = 'Bearer ' + String(req.query.t); next(); });
 router.use(authMiddleware);
 
 const chatLimiter = rateLimit({
@@ -58,6 +62,25 @@ router.post('/chat', chatLimiter, async (req, res) => {
   const name = (u.companyName || u.fullName || 'Пользователь') + (u.companyName && u.fullName ? ' · ' + u.fullName : '');
   const m = await c.postMessage({ userId: req.userId, name, text });
   res.json({ ok: true, id: m.id });
+});
+
+// ---- Личные сообщения с администрацией XCAR (XCAR CONTROL → Сообщения) ----
+const dmLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Слишком часто. Подождите немного.' } });
+router.get('/dm', async (req, res) => { res.json(await dm.getThreadForUser(req.userId, { markRead: req.query.read === '1' })); });
+router.get('/dm/unread', async (req, res) => { res.json(await dm.unreadForUser(req.userId)); });
+router.post('/dm', dmLimiter, async (req, res) => {
+  const b = req.body || {};
+  try { const m = await dm.post(req.userId, { from: 'user', text: b.text, attachments: b.attachments }); res.json({ ok: true, id: m.id }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+router.get('/attachments/:id', async (req, res) => {
+  const a = dm.readAttachment(req.params.id);
+  if (!a) return res.status(404).json({ error: 'Файл не найден' });
+  const t = await dm.getThreadForUser(req.userId, {});
+  if (!t.messages.some((m) => (m.attachments || []).some((x) => x.id === req.params.id))) return res.status(404).json({ error: 'Файл не найден' });
+  res.setHeader('Content-Type', a.meta.type || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(a.meta.name)}`);
+  res.sendFile(a.file);
 });
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const express = require('express');
 const { authMiddleware } = require('../lib/auth');
-const { readStore, writeStore, writeStoreKey, readUsers, EMPTY_STORE } = require('../lib/store');
+const { readStore, writeStore, writeStoreKey, syncStoreKey, readRevs, readUsers, EMPTY_STORE } = require('../lib/store');
 const { readConfig } = require('../lib/config');
 const { computeStatus, trialSubscription } = require('../lib/subscription');
 const push = require('../lib/push');
@@ -31,7 +31,14 @@ async function checkCarLimit(userId, newCars) {
 //  sharedClientSources, settings) — те же ключи, что клиент хранит в localStorage.
 router.get('/', authMiddleware, async (req, res) => {
   const store = await readStore(req.userId);
-  res.json(store);
+  res.json(store); // включает _rev — ревизии разделов для синхронизации
+});
+
+// GET /api/data/rev — только номера ревизий разделов (лёгкий опрос: приложение
+// раз в полминуты проверяет, не изменил ли данные кто-то другой — XCAR CONTROL,
+// старая панель /admin или другое устройство этого аккаунта)
+router.get('/rev', authMiddleware, async (req, res) => {
+  res.json({ rev: await readRevs(req.userId), time: new Date().toISOString() });
 });
 
 // PUT /api/data — заменить всю базу целиком (используется редко,
@@ -57,7 +64,7 @@ router.put('/:key', authMiddleware, async (req, res) => {
   if (!ALLOWED_KEYS.includes(key)) {
     return res.status(400).json({ error: 'Неизвестный ключ данных: ' + key });
   }
-  const { value } = req.body || {};
+  const { value, baseRev, knownIds, changedIds, knownKeys, changedKeys } = req.body || {};
   if (key === 'cars') {
     const err = await checkCarLimit(req.userId, value);
     if (err) return res.status(403).json({ error: err });
@@ -75,8 +82,16 @@ router.put('/:key', authMiddleware, async (req, res) => {
       newPayments = value.filter(l => l && l.type === 'payment' && !prevIds.has(l.id));
     } catch (e) { /* уведомление не критично — не мешаем сохранению данных */ }
   }
-  await writeStoreKey(req.userId, key, value === undefined ? null : value);
-  res.json({ ok: true, updatedAt: new Date().toISOString() });
+  if (key === 'settings') {
+    // история настроек — для «Восстановления настроек» в XCAR CONTROL
+    try { const prev = await readStore(req.userId); require('../lib/control/backup').recordSettings(req.userId, prev.settings); } catch (e) {}
+  }
+  // baseRev — ревизия, от которой приложение делало правку. Если с тех пор раздел
+  // изменил кто-то другой, сервер сливает изменения (а не затирает чужие) и
+  // возвращает итог — приложение подменяет свою копию на него.
+  const r = await syncStoreKey(req.userId, key, value === undefined ? null : value, baseRev, { knownIds, changedIds, knownKeys, changedKeys });
+  try { require('../lib/control/aggregate').invalidate(); } catch (e) {}
+  res.json(Object.assign({ ok: true, updatedAt: new Date().toISOString(), rev: r.rev, merged: r.merged }, r.merged ? { value: r.value } : {}));
   if (newPayments.length) {
     newPayments.forEach(p => {
       push.sendToUser(req.userId, {

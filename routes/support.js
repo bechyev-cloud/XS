@@ -22,6 +22,8 @@ router.post('/', authMiddleware, supportLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Опишите проблему' });
   }
   const ticket = await createTicket(req.userId, message, contactPhone);
+  // то же обращение появляется в XCAR CONTROL → Сообщения (диалог с пользователем)
+  try { await require('../lib/control/messages').post(req.userId, { from: 'user', text: '🛟 Тех. поддержка: ' + String(message).trim() + (contactPhone ? '\nТелефон для связи: ' + contactPhone : '') }); } catch (e) {}
   res.json({ ok: true, ticket: { id: ticket.id, createdAt: ticket.createdAt } });
 });
 

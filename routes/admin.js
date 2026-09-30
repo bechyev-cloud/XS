@@ -60,6 +60,14 @@ router.post('/login', adminLoginLimiter, (req, res) => {
 
 // Всё, что ниже, требует действующего admin-токена.
 router.use(adminAuthMiddleware);
+// Журнал действий: изменения из старой панели /admin тоже попадают в Audit Log XCAR CONTROL
+router.use((req, res, next) => {
+  if (req.method !== 'GET') res.on('finish', () => {
+    require('../lib/control/audit').log(req, `Старая панель: ${req.method} ${req.path}`, { type: 'legacy', id: (req.path.match(/users\/([0-9a-f-]{36})/) || [])[1] || null }, res.statusCode < 400 ? 'ok' : 'error').catch(() => {});
+    require('../lib/control/aggregate').invalidate();
+  });
+  next();
+});
 
 // GET /api/admin/stats — общая сводка по сервису
 router.get('/stats', async (req, res) => {
@@ -261,7 +269,7 @@ router.get('/payment-requests', async (req, res) => {
     const months = r.months || 1;
     return Object.assign({}, r, {
       months,
-      amount: plan ? computeTariffAmount(plan.price, months) : null, // сумма к переводу (тариф × срок, со скидкой за срок — см. TARIFF_DISCOUNTS в lib/config.js)
+      amount: plan ? computeTariffAmount(plan.price, months, cfg.discounts) : null, // сумма к переводу (тариф × срок, со скидкой за срок — см. TARIFF_DISCOUNTS в lib/config.js)
       user: user ? { id: user.id, fullName: user.fullName, companyName: user.companyName, phone: user.phone } : null,
       plan: plan || null
     });
@@ -368,6 +376,9 @@ router.put('/settings', async (req, res) => {
       }
     }
   };
+  // скидки за срок редактируются в XCAR CONTROL — старая панель их не присылает, сохраняем как есть
+  const prevCfg = await readConfig();
+  next.discounts = (req.body && req.body.discounts) || prevCfg.discounts;
   const saved = await writeConfig(next);
   res.json({ config: saved });
 });

@@ -149,6 +149,8 @@ router.post('/login', authLimiter, async (req, res) => {
 
     const cfg = await readConfig();
     const token = signToken(user);
+    user.lastLoginAt = new Date().toISOString(); // для XCAR CONTROL → Пользователи
+    await writeUsers(usersData);
     res.json({ token, user: publicUser(user, cfg) });
   } catch (e) {
     console.error(e);

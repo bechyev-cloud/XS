@@ -26,7 +26,7 @@ async function getSelfUser(req) {
 // GET /api/billing/plans — список тарифов
 router.get('/plans', async (req, res) => {
   const cfg = await readConfig();
-  res.json({ plans: cfg.plans, trialDays: cfg.trialDays });
+  res.json({ plans: cfg.plans, trialDays: cfg.trialDays, discounts: cfg.discounts });
 });
 
 // GET /api/billing/status — актуальный статус подписки текущего аккаунта
@@ -60,7 +60,7 @@ router.post('/request', requestLimiter, async (req, res) => {
   const { user } = await getSelfUser(req);
   if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
 
-  const amount = computeTariffAmount(plan.price, m);
+  const amount = computeTariffAmount(plan.price, m, cfg.discounts);
   const request = await createRequest(user.id, plan.id, m, contactPhone, clientName, paymentBank);
   res.json({ ok: true, request, plan, months: m, amount, payment: cfg.payment });
 });
