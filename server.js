@@ -24,6 +24,7 @@ const billingRoutes = require('./routes/billing');
 const pushRoutes = require('./routes/push');
 const supportRoutes = require('./routes/support');
 const communityRoutes = require('./routes/community');
+const checkRoutes = require('./routes/check');
 const control = require('./routes/control');
 const monitor = require('./lib/control/monitor');
 const { startNotifier } = require('./lib/notifier');
@@ -39,8 +40,11 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 // Лимит побольше стандартного: в данных бывают фото машин / документов в base64.
 app.use(express.json({ limit: '30mb' }));
 
-app.get('/api/health', (req, res) => {
-  res.json({ ok: true, name: 'xcar-server', time: new Date().toISOString(), version: monitor.VERSION, uptime: Math.round((Date.now() - monitor.STARTED) / 1000) });
+app.get('/api/health', async (req, res) => {
+  // app — настройки пользовательского приложения из панели (например, скрыть раздел «Серверы»)
+  let appCfg = { hideServerSettings: false };
+  try { appCfg = (await require('./lib/control/settings').get()).app; } catch (e) { /* по умолчанию */ }
+  res.json({ ok: true, app: appCfg, name: 'xcar-server', time: new Date().toISOString(), version: monitor.VERSION, uptime: Math.round((Date.now() - monitor.STARTED) / 1000) });
 });
 // Краткие метрики нагрузки (без секретов) — для мониторинга из XCAR CONTROL другого сервера
 app.get('/api/health/metrics', (req, res) => { res.json(monitor.publicMetrics()); });
@@ -52,6 +56,7 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/check', checkRoutes);
 app.use('/api/control', control.router);
 
 // Супер-админ панель — отдаётся прямо этим сервером, без отдельного хостинга.

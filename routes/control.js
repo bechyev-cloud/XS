@@ -444,7 +444,9 @@ router.put('/clients/:acc/:id', perm('clients.edit'), wrap(async (req, res) => {
   await mutateAccountStore(req.params.acc, (store) => {
     const c = (store.clients || []).find((x) => x.id === req.params.id); if (!c) throw bad('Клиент не найден', 404);
     ['name', 'phone', 'doc', 'licenseNum', 'notes'].forEach((k) => { if (b[k] !== undefined && b[k] !== c[k]) { c[k] = String(b[k] || '').trim().slice(0, k === 'notes' ? 3000 : 120); changed.push(k); } });
-    if (b.blacklisted !== undefined && !!b.blacklisted !== !!c.blacklisted) { c.blacklisted = !!b.blacklisted; changed.push(c.blacklisted ? 'добавлен в ЧС' : 'убран из ЧС'); }
+    if (b.blacklisted !== undefined && !!b.blacklisted !== !!c.blacklisted) { c.blacklisted = !!b.blacklisted; c.blacklistedAt = c.blacklisted ? new Date().toISOString() : null; if (!c.blacklisted) c.blacklistReason = ''; changed.push(c.blacklisted ? 'добавлен в ЧС' : 'убран из ЧС'); }
+    // причина — «личный чёрный список» пользователя (то же поле, что в приложении XCAR)
+    if (b.blacklistReason !== undefined && c.blacklisted && String(b.blacklistReason || '').trim() !== (c.blacklistReason || '')) { c.blacklistReason = String(b.blacklistReason || '').trim().slice(0, 2000); changed.push('причина ЧС'); }
     name = c.name;
   });
   await audit.log(req, 'Изменил клиента', { type: 'client', id: req.params.acc + '~' + req.params.id, name, userId: req.params.acc }, 'ok', changed.join(', '));
@@ -548,10 +550,14 @@ router.delete('/broadcasts/:id', perm('broadcast.send'), wrap(async (req, res) =
 }));
 // Общая группа (тот же чат, что в приложении)
 router.get('/group', perm('messages.view'), wrap(async (req, res) => {
-  const [chat, usersData] = await Promise.all([community.readChat(), readUsers()]);
-  const bans = chat.bans || []; const cnt = {}; chat.messages.forEach((m) => { if (m.userId) cnt[m.userId] = (cnt[m.userId] || 0) + 1; });
-  res.json({ closed: !!chat.closed, bans, messages: chat.messages.slice(-300),
-    members: usersData.users.filter((u) => cnt[u.id] || bans.includes(u.id)).map((u) => ({ userId: u.id, name: u.companyName || u.fullName, phone: u.phone, messages: cnt[u.id] || 0, banned: bans.includes(u.id), online: msgs.isOnline(u.id) })) });
+  const [chat, usersData, pmd] = await Promise.all([community.readChat(), readUsers(), require('../lib/pm').snapshot()]);
+  const bans = chat.bans || []; const mods = chat.mods || []; const pmBans = pmd.banned || [];
+  const cnt = {}; chat.messages.forEach((m) => { if (m.userId) cnt[m.userId] = (cnt[m.userId] || 0) + 1; });
+  // все пользователи: сначала модераторы, потом активные в группе, потом остальные
+  const members = usersData.users.map((u) => ({ userId: u.id, name: u.companyName || u.fullName || u.phone, phone: u.phone, messages: cnt[u.id] || 0,
+    banned: bans.includes(u.id), mod: mods.includes(u.id), pmBanned: pmBans.includes(u.id), online: msgs.isOnline(u.id) }))
+    .sort((a, b) => (b.mod - a.mod) || (b.messages - a.messages) || String(a.name).localeCompare(String(b.name)));
+  res.json({ closed: !!chat.closed, bans, mods, messages: chat.messages.slice(-300), members });
 }));
 router.post('/group', perm('messages.send'), wrap(async (req, res) => {
   const text = String((req.body || {}).text || '').trim(); if (!text) throw bad('Введите сообщение');
@@ -566,6 +572,16 @@ router.post('/group/ban', perm('messages.send'), wrap(async (req, res) => {
   const { userId, banned } = req.body || {}; if (!userId) throw bad('Не указан пользователь');
   await community.setChatBan(userId, !!banned);
   await audit.log(req, banned ? 'Запретил писать в группу' : 'Разрешил писать в группу', { type: 'user', id: userId }); res.json({ ok: true });
+}));
+router.post('/group/mod', perm('messages.send'), wrap(async (req, res) => {
+  const { userId, on } = req.body || {}; if (!userId) throw bad('Не указан пользователь');
+  await community.setChatMod(userId, !!on);
+  await audit.log(req, on ? 'Назначил модератора группы' : 'Снял модератора группы', { type: 'user', id: userId }); res.json({ ok: true });
+}));
+router.post('/pm/ban', perm('messages.send'), wrap(async (req, res) => {
+  const { userId, on } = req.body || {}; if (!userId) throw bad('Не указан пользователь');
+  await require('../lib/pm').setBanned(userId, !!on);
+  await audit.log(req, on ? 'Запретил личные сообщения' : 'Разрешил личные сообщения', { type: 'user', id: userId }); res.json({ ok: true });
 }));
 router.delete('/group/messages/:id', perm('messages.send'), wrap(async (req, res) => {
   await community.deleteMessage(req.params.id); await audit.log(req, 'Удалил сообщение группы', { type: 'group', id: req.params.id }); res.json({ ok: true });
@@ -691,7 +707,7 @@ router.delete('/admins/:id', perm('admins.manage'), wrap(async (req, res) => {
 }));
 router.get('/settings', wrap(async (req, res) => {
   const s = await ctlSettings.get();
-  res.json({ general: s.general, notifications: s.notifications, quickReplies: s.quickReplies, backup: s.backup, servers: s.servers, version: monitor.VERSION });
+  res.json({ general: s.general, notifications: s.notifications, quickReplies: s.quickReplies, backup: s.backup, servers: s.servers, app: s.app, version: monitor.VERSION });
 }));
 router.put('/settings/:section', wrap(async (req, res) => {
   const section = req.params.section;

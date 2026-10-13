@@ -6,6 +6,14 @@
 <title>XCAR CONTROL</title>
 <meta name="description" content="XCAR CONTROL — Professional Fleet & Business Management">
 <meta name="theme-color" content="#060A15">
+<script>
+/* Android-приложение (APK): строка индикаторов и нижняя панель — в цвет темы приложения */
+(function(){var A=window.XcarAndroid;if(!A)return;var d=document.documentElement;d.classList.add('android-app');
+/* строка индикаторов видна и окрашена в цвет темы — отступ сверху не нужен */
+function push(){var m=document.querySelector('meta[name="theme-color"]');var h=((m&&m.content)||'#14161c').replace('#','');if(h.length===3)h=h.replace(/(.)/g,'$1$1');
+var r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);try{A.bars('#'+h.substr(0,6),(0.299*r+0.587*g+0.114*b)>150);}catch(e){}}
+push();try{new MutationObserver(push).observe(document.head,{subtree:true,childList:true,attributes:true,attributeFilter:['content']});}catch(e){}})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

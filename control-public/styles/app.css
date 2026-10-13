@@ -1,3 +1,4 @@
+:root{--sat:env(safe-area-inset-top, 0px);}
 /* XCAR CONTROL — Professional Fleet & Business Management */
 :root{
   --red:#E3262E; --red-2:#FF4B53; --red-soft:rgba(227,38,46,.12);
@@ -540,7 +541,7 @@ mark{background:rgba(227,38,46,.22);color:inherit;border-radius:3px;padding:0 1p
   body{font-size:15px;}
   .app{grid-template-columns:1fr;}
   .sidebar{display:none;}
-  .topbar{padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));gap:8px;}
+  .topbar{padding:10px 14px;padding-top:calc(10px + var(--sat));gap:8px;}
   .tb-mlogo{display:inline-flex;}
   .tb-mlogo .logo-word{font-size:20px;color:var(--text);}
   [data-theme="dark"] .tb-mlogo .logo-word{color:#fff;}
@@ -589,7 +590,7 @@ mark{background:rgba(227,38,46,.22);color:inherit;border-radius:3px;padding:0 1p
   .bl-search{flex-direction:column;} .bl-search input{flex:0 0 auto;width:100%;font-size:15px;} .bl-search .btn{width:100%;}
   .bl-res.compact .bl-card{flex-direction:column;gap:4px;} .bl-res.compact .bl-card h4{min-width:0;}
   .login{grid-template-columns:1fr;} .login-art{display:none;}
-  .gs{padding:0;} .gs-box{max-width:none;max-height:100dvh;height:100dvh;border-radius:0;padding-top:env(safe-area-inset-top);}
+  .gs{padding:0;} .gs-box{max-width:none;max-height:100dvh;height:100dvh;border-radius:0;padding-top:var(--sat);}
   .hero{padding:16px;} .hero h2{font-size:20px;}
   .gallery{grid-template-columns:1fr 1fr;grid-auto-rows:110px;} .gallery img:first-child{grid-column:span 2;grid-row:span 2;}
   .diff-row{grid-template-columns:1fr;}
@@ -693,3 +694,5 @@ mark{background:rgba(227,38,46,.22);color:inherit;border-radius:3px;padding:0 1p
 .inst-steps{margin:0 0 12px;padding-left:20px;display:grid;gap:10px;line-height:1.55;}
 
 .cn-why{color:var(--red-2);font-weight:700;font-size:13px;text-decoration:none;} .cn-why:hover{text-decoration:underline;}
+/* на телефоне плашка «нет соединения» не должна перекрывать кнопки шапки */
+@media (max-width:760px), (max-height:520px) and (max-width:1000px){ .offline-bar{top:auto;bottom:calc(84px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);} }
