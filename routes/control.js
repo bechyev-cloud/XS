@@ -17,6 +17,9 @@ const audit = require('../lib/control/audit');
 const agg = require('../lib/control/aggregate');
 const msgs = require('../lib/control/messages');
 const blacklist = require('../lib/control/blacklist');
+const tgAccess = require('../lib/control/tgaccess');
+const releases = require('../lib/control/releases');
+const carPresets = require('../lib/control/carpresets');
 const monitor = require('../lib/control/monitor');
 const backup = require('../lib/control/backup');
 const ctlSettings = require('../lib/control/settings');
@@ -625,6 +628,54 @@ router.post('/blacklist/files', perm('blacklist.edit'), wrap(async (req, res) =>
 router.delete('/blacklist/files/:id', perm('blacklist.edit'), wrap(async (req, res) => {
   if (!(await blacklist.removeFile(req.params.id))) throw bad('Файл не найден', 404);
   await audit.log(req, 'Удалил файл из базы ЧС', { type: 'blacklist', id: req.params.id }); res.json({ ok: true });
+}));
+
+/* ================= доступ к базе Telegram ================= */
+router.get('/tg-access', perm('blacklist.view'), wrap(async (req, res) => {
+  const usersData = await readUsers(); const um = new Map(usersData.users.map((u) => [u.id, u]));
+  res.json({ requests: (await tgAccess.list()).map((r) => { const u = um.get(r.uid) || {}; return Object.assign(r, { account: { id: r.uid, fullName: u.fullName || '', companyName: u.companyName || '', phone: u.phone || '' } }); }) });
+}));
+router.get('/tg-access/:uid/files/:i', perm('blacklist.view'), wrap(async (req, res) => {
+  const f = await tgAccess.file(req.params.uid, req.params.i); if (!f) throw bad('Файл не найден', 404);
+  res.setHeader('Content-Type', f.meta.type || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `${req.query.download ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(f.meta.name)}`);
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.sendFile(f.path);
+}));
+router.post('/tg-access/:uid', perm('blacklist.edit'), wrap(async (req, res) => {
+  const action = String((req.body || {}).action || '');
+  if (!['approve', 'reject', 'revoke'].includes(action)) throw bad('Неизвестное действие');
+  let r; try { r = await tgAccess.decide(req.params.uid, action, req.admin.name, (req.body || {}).note); } catch (e) { throw bad(e.message, 404); }
+  const text = action === 'approve' ? '✅ Доступ к базе Telegram в «Проверке клиента» открыт.' : action === 'revoke' ? '⛔ Доступ к базе Telegram закрыт администратором.' + (r.note ? ' Причина: ' + r.note : '') : '❌ Заявка на доступ к базе Telegram отклонена.' + (r.note ? ' Причина: ' + r.note : '') + ' Вы можете подать её заново.';
+  try { await msgs.post(req.params.uid, { from: 'admin', text, adminName: req.admin.name }); } catch (e) {}
+  push.sendToUser(req.params.uid, { title: 'XCAR · База Telegram', body: text.slice(0, 160), tag: 'tg-access' }).catch(() => {});
+  await audit.log(req, action === 'approve' ? 'Открыл доступ к базе Telegram' : action === 'revoke' ? 'Закрыл доступ к базе Telegram' : 'Отклонил заявку на базу Telegram', { type: 'user', id: req.params.uid });
+  res.json({ request: r });
+}));
+
+/* ================= готовые машины для пользователей ================= */
+router.get('/car-presets', perm('fleet.view'), wrap(async (req, res) => { res.json({ items: await carPresets.list() }); }));
+router.post('/car-presets', perm('fleet.edit'), wrap(async (req, res) => {
+  let it; try { it = await carPresets.create(req.body || {}, req.admin.name); } catch (e) { throw bad(e.message); }
+  await audit.log(req, 'Добавил готовую машину', { type: 'preset', id: it.id }, 'ok', `${it.make} ${it.model} · ${it.target === 'all' ? 'всем' : it.userIds.length + ' польз.'}`); res.json({ item: it });
+}));
+router.put('/car-presets/:id', perm('fleet.edit'), wrap(async (req, res) => {
+  let it; try { it = await carPresets.update(req.params.id, req.body || {}); } catch (e) { throw bad(e.message); }
+  await audit.log(req, 'Изменил готовую машину', { type: 'preset', id: it.id }); res.json({ item: it });
+}));
+router.delete('/car-presets/:id', perm('fleet.edit'), wrap(async (req, res) => {
+  await carPresets.remove(req.params.id); await audit.log(req, 'Удалил готовую машину', { type: 'preset', id: req.params.id }); res.json({ ok: true });
+}));
+
+/* ================= установочные файлы приложения ================= */
+router.get('/releases', perm('settings.edit', 'servers.view'), wrap(async (req, res) => { res.json({ releases: await releases.info() }); }));
+router.post('/releases/:platform', perm('settings.edit'), express.raw({ type: '*/*', limit: '300mb' }), wrap(async (req, res) => {
+  let r; try { r = await releases.save(req.params.platform, req.body, { version: req.query.version, name: req.query.name, notes: req.query.notes, by: req.admin.name }); } catch (e) { throw bad(e.message); }
+  await audit.log(req, 'Загрузил обновление приложения', { type: 'release', id: req.params.platform }, 'ok', `${r.name} · ${r.version}`);
+  res.json({ release: r });
+}));
+router.delete('/releases/:platform', perm('settings.edit'), wrap(async (req, res) => {
+  await releases.remove(req.params.platform); await audit.log(req, 'Удалил обновление приложения', { type: 'release', id: req.params.platform }); res.json({ ok: true });
 }));
 
 /* ================= серверы ================= */

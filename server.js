@@ -49,6 +49,24 @@ app.get('/api/health', async (req, res) => {
 // Краткие метрики нагрузки (без секретов) — для мониторинга из XCAR CONTROL другого сервера
 app.get('/api/health/metrics', (req, res) => { res.json(monitor.publicMetrics()); });
 
+// Установочные файлы для обновления приложения (Android / Windows) — загружает администратор в XCAR CONTROL
+const releases = require('./lib/control/releases');
+app.get('/api/app/release', async (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json({ ok: true, releases: await releases.info() }); });
+app.get('/api/app/download/:platform', async (req, res) => {
+  const p = req.params.platform; const r = (await releases.info())[p];
+  if (!r) return res.status(404).json({ error: 'Файл обновления не загружен' });
+  res.setHeader('Content-Type', releases.MIME[p]);
+  res.setHeader('Content-Length', r.size);
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(r.name)}`);
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Disposition');
+  require('fs').createReadStream(releases.fileOf(p)).pipe(res);
+});
+// Готовые машины от администратора — приложение забирает их при запуске
+app.get('/api/presets/cars', require('./lib/auth').authMiddleware, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ cars: await require('./lib/control/carpresets').forUser(req.userId) });
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/admin', adminRoutes);
