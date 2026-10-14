@@ -6,10 +6,10 @@ const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { readUsers, writeUsers, readStore, writeStore, updateStore, deleteStore, storeCounts } = require('../lib/store');
-const { readConfig, writeConfig } = require('../lib/config');
+const { readConfig, writeConfig, computeTariffAmount } = require('../lib/config');
 const { hashPassword } = require('../lib/auth');
 const { publicSubscription, extendSubscription, ensureSubscription, trialSubscription } = require('../lib/subscription');
-const { listRequests, resolveRequest } = require('../lib/requests');
+const { listRequests, resolveRequest, pendingCount } = require('../lib/requests');
 const push = require('../lib/push');
 const community = require('../lib/community');
 const rbac = require('../lib/control/rbac');
@@ -23,6 +23,9 @@ const carPresets = require('../lib/control/carpresets');
 const monitor = require('../lib/control/monitor');
 const backup = require('../lib/control/backup');
 const ctlSettings = require('../lib/control/settings');
+const chatmod = require('../lib/control/chatmod');
+const tgbot = require('../lib/control/tgbot');
+const checkshare = require('../lib/checkshare');
 const { jsonFile } = require('../lib/control/jsonfile');
 
 const router = express.Router();
@@ -95,7 +98,7 @@ router.use(auth);
 router.get('/me', wrap(async (req, res) => {
   const rec = await rbac.getAdmin(req.admin.id);
   res.json({ admin: Object.assign(rbac.publicAdmin(rec), { perms: req.admin.perms, sid: req.admin.sid }), roles: rbac.ROLES, permissions: rbac.PERMISSIONS,
-    unreadMessages: can(req, 'messages.view') ? await msgs.totalUnreadForAdmin() : 0 });
+    unreadMessages: can(req, 'messages.view') ? await msgs.totalUnreadForAdmin() : 0, pendingPayments: can(req, 'payments.view') ? await pendingCount() : 0 });
 }));
 router.post('/logout', wrap(async (req, res) => { await rbac.revokeSession(req.admin.sid); await audit.log(req, 'Выход из XCAR CONTROL', { type: 'auth' }); res.json({ ok: true }); }));
 router.get('/me/sessions', wrap(async (req, res) => {
@@ -154,7 +157,7 @@ router.get('/search', perm('dashboard.view'), wrap(async (req, res) => {
   if (can(req, 'payments.view')) push_('payments', 'Платежи', agg.buildPayments(all, await listRequests(), all.cfg).filter((p) => has(p.client, p.account, p.comment) || (digits && String(p.amount).includes(digits)))
     .map((p) => ({ id: p.uid, title: `${p.amount.toLocaleString('ru-RU')} ₽ · ${p.client || p.account}`, sub: `${p.date.replace('T', ' ')} · ${p.method}`, route: `payments?q=${encodeURIComponent(q)}` })));
   if (can(req, 'messages.view')) { const byId = new Map(all.accounts.map((a) => [a.user.id, a.user])); push_('messages', 'Сообщения', (await msgs.searchMessages(q, byId)).map((m) => ({ id: m.id, title: m.name, sub: (m.text || '').slice(0, 90), route: `messages/${m.userId}` }))); }
-  if (can(req, 'blacklist.view')) push_('blacklist', 'Чёрный список', (await blacklist.search(q, agg.buildClients(all, now).filter((c) => c.blacklisted))).map((b) => ({ id: b.id, title: b.title, sub: b.text.split('\n').slice(0, 2).join(' · ').slice(0, 100), route: `blacklist?q=${encodeURIComponent(q)}` })));
+  if (can(req, 'blacklist.view')) push_('blacklist', 'Проверка клиента', (await blacklist.search(q, agg.buildClients(all, now).filter((c) => c.blacklisted))).map((b) => ({ id: b.id, title: b.title, sub: b.text.split('\n').slice(0, 2).join(' · ').slice(0, 100), route: `blacklist?q=${encodeURIComponent(q)}` })));
   res.json({ q, groups });
 }));
 
@@ -469,10 +472,16 @@ router.post('/payments/requests/:id/:action', perm('payments.edit'), wrap(async 
     if (r.status !== 'pending') throw bad('Заявка уже обработана');
     const months = Math.max(1, Math.round(Number((req.body || {}).months) || r.months || 1));
     await mutateUser(r.userId, (u) => { u.subscription = extendSubscription(u.subscription, r.planId, months, cfg); });
-    await resolveRequest(id, 'approved', months); detail = `+${months} мес.`;
+    const { user } = await mutateUser(r.userId, () => {});
+    await resolveRequest(id, 'approved', months, (req.body || {}).note, req.admin.name); detail = `+${months} мес.`;
+    const planName = (cfg.plans.find((p) => p.id === r.planId) || {}).name || r.planId;
+    const until = user.subscription && user.subscription.expiresAt ? new Date(user.subscription.expiresAt).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' }) : '';
+    notifyPay(r.userId, `✅ Оплата подтверждена!\nТариф «${planName}» продлён на ${months} мес.${until ? ' — до ' + until : ''}.\nСпасибо, что пользуетесь XCAR!`);
   } else if (action === 'reject') {
     if (r.status !== 'pending') throw bad('Заявка уже обработана');
-    await resolveRequest(id, 'rejected');
+    const note = String((req.body || {}).note || '').trim();
+    await resolveRequest(id, 'rejected', null, note, req.admin.name);
+    notifyPay(r.userId, `❌ Заявка на оплату отклонена.${note ? '\nПричина: ' + note : ''}\nЕсли вы уже перевели деньги — ответьте в этот чат и приложите чек.`);
   } else if (action === 'refund') {
     if (r.status !== 'approved') throw bad('Возврат возможен только по подтверждённой оплате');
     const cut = (req.body || {}).cutSubscription !== false;
@@ -482,6 +491,40 @@ router.post('/payments/requests/:id/:action', perm('payments.edit'), wrap(async 
   agg.invalidate();
   await audit.log(req, { approve: 'Подтвердил оплату подписки', reject: 'Отклонил заявку на оплату', refund: 'Оформил возврат оплаты' }[action], { type: 'payment', id, userId: r.userId }, 'ok', detail);
   res.json({ ok: true });
+}));
+// сообщение клиенту об оплате: в «Сообщения → Техподдержка» + push
+async function notifyPay(userId, text) {
+  try { await msgs.post(userId, { from: 'admin', text, adminName: 'Оплата XCAR', priority: 'high' }); } catch (e) {}
+  push.sendToUser(userId, { title: 'XCAR · Оплата тарифа', body: text.slice(0, 160), tag: 'pay' }).catch(() => {});
+}
+// ---- Заявки на оплату (новый раздел «Тарифы → Заявки на оплату») ----
+router.get('/payrequests', perm('payments.view'), wrap(async (req, res) => {
+  const [list, usersData, cfg] = await Promise.all([listRequests(), readUsers(), readConfig()]);
+  const um = new Map(usersData.users.map((u) => [u.id, u]));
+  res.json({ requests: list.slice(0, 500).map((r) => { const u = um.get(r.userId) || {}; const plan = cfg.plans.find((p) => p.id === r.planId) || {};
+    return Object.assign({}, r, { planName: plan.name || r.planId, carLimit: plan.carLimit, amount: r.amount || computeTariffAmount(plan.price || 0, r.months || 1, cfg.discounts),
+      account: { id: u.id, companyName: u.companyName || '', fullName: u.fullName || '', phone: u.phone || '' },
+      subscription: u.subscription ? publicSubscription(u.subscription, cfg) : null }); }), pending: list.filter((r) => r.status === 'pending').length });
+}));
+router.get('/payrequests/:id/receipt', perm('payments.view'), wrap(async (req, res) => {
+  const r = (await listRequests()).find((x) => x.id === req.params.id);
+  const a = r && r.receipt && msgs.readAttachment(r.receipt.id); if (!a) throw bad('Чек не найден', 404);
+  res.setHeader('Content-Type', a.meta.type || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(a.meta.name)}`);
+  res.sendFile(a.file);
+}));
+// ---- Платёжные данные: QR-код, карты, телефон, ФИО — их видит клиент при выборе тарифа ----
+router.get('/payment-settings', perm('payments.view', 'subscriptions.edit'), wrap(async (req, res) => { res.json({ payment: (await readConfig()).payment }); }));
+router.put('/payment-settings', perm('payments.edit', 'subscriptions.edit'), wrap(async (req, res) => {
+  const b = req.body || {}; const cfg = await readConfig(); const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+  let qr = cfg.payment.qrCodeImage || '';
+  if (b.qrCodeImage !== undefined) { qr = String(b.qrCodeImage || ''); if (qr && !/^data:image\/(png|jpe?g|webp|gif|svg\+xml);base64,/.test(qr)) throw bad('QR-код должен быть картинкой'); if (qr.length > 4 * 1024 * 1024) throw bad('Картинка QR-кода слишком большая (до 3 МБ)'); }
+  const cards = (Array.isArray(b.cards) ? b.cards : []).slice(0, 10).map((c) => ({ bank: s(c.bank, 60), number: s(c.number, 40), holder: s(c.holder, 120), color: s(c.color, 20) })).filter((c) => c.bank || c.number);
+  cfg.payment = Object.assign({}, cfg.payment, { holder: s(b.holder, 120), phone: s(b.phone, 40), comment: s(b.comment, 1000), instructions: s(b.instructions, 2000), qrTitle: s(b.qrTitle, 120), qrCodeImage: qr, cards,
+    bank: cards[0] ? cards[0].bank : '', cardNumber: cards[0] ? cards[0].number : '' });
+  await writeConfig(cfg); agg.invalidate();
+  await audit.log(req, 'Изменил платёжные данные', { type: 'settings' }, 'ok', `карт: ${cards.length}${qr ? ', QR-код' : ''}`);
+  res.json({ payment: cfg.payment });
 }));
 router.get('/subscriptions', perm('subscriptions.edit', 'payments.view'), wrap(async (req, res) => {
   const all = await agg.loadAll(); const cfg = all.cfg;
@@ -553,14 +596,14 @@ router.delete('/broadcasts/:id', perm('broadcast.send'), wrap(async (req, res) =
 }));
 // Общая группа (тот же чат, что в приложении)
 router.get('/group', perm('messages.view'), wrap(async (req, res) => {
-  const [chat, usersData, pmd] = await Promise.all([community.readChat(), readUsers(), require('../lib/pm').snapshot()]);
-  const bans = chat.bans || []; const mods = chat.mods || []; const pmBans = pmd.banned || [];
+  const [chat, usersData, pmd, cm] = await Promise.all([community.readChat(), readUsers(), require('../lib/pm').snapshot(), chatmod.get()]);
+  const bans = chat.bans || []; const mods = chat.mods || []; const pmBans = pmd.banned || []; const muted = chatmod.mutedMap(cm);
   const cnt = {}; chat.messages.forEach((m) => { if (m.userId) cnt[m.userId] = (cnt[m.userId] || 0) + 1; });
   // все пользователи: сначала модераторы, потом активные в группе, потом остальные
   const members = usersData.users.map((u) => ({ userId: u.id, name: u.companyName || u.fullName || u.phone, phone: u.phone, messages: cnt[u.id] || 0,
-    banned: bans.includes(u.id), mod: mods.includes(u.id), pmBanned: pmBans.includes(u.id), online: msgs.isOnline(u.id) }))
+    banned: bans.includes(u.id), mod: mods.includes(u.id), pmBanned: pmBans.includes(u.id), supportBanned: cm.supportBans.includes(u.id), mutedUntil: muted[u.id] || null, online: msgs.isOnline(u.id) }))
     .sort((a, b) => (b.mod - a.mod) || (b.messages - a.messages) || String(a.name).localeCompare(String(b.name)));
-  res.json({ closed: !!chat.closed, bans, mods, messages: chat.messages.slice(-300), members });
+  res.json({ closed: !!chat.closed, pmClosed: cm.pmClosed, supportClosed: cm.supportClosed, retention: cm.retention, fileMb: cm.fileMb, fileMaxMb: chatmod.HARD_MB, bans, mods, messages: chat.messages.slice(-300), members });
 }));
 router.post('/group', perm('messages.send'), wrap(async (req, res) => {
   const text = String((req.body || {}).text || '').trim(); if (!text) throw bad('Введите сообщение');
@@ -586,6 +629,72 @@ router.post('/pm/ban', perm('messages.send'), wrap(async (req, res) => {
   await require('../lib/pm').setBanned(userId, !!on);
   await audit.log(req, on ? 'Запретил личные сообщения' : 'Разрешил личные сообщения', { type: 'user', id: userId }); res.json({ ok: true });
 }));
+// ---- Модерация чатов: ограничить / заблокировать пользователя, закрыть чаты ----
+router.put('/chatmod/settings', perm('messages.send'), wrap(async (req, res) => {
+  const b = req.body || {}; const r = {};
+  if (b.groupClosed !== undefined) { r.groupClosed = await community.setChatClosed(!!b.groupClosed); await audit.log(req, r.groupClosed ? 'Закрыл общую группу' : 'Открыл общую группу', { type: 'group' }); }
+  if (b.pmClosed !== undefined || b.supportClosed !== undefined || b.retention || b.fileMb !== undefined) {
+    Object.assign(r, await chatmod.setFlags({ pmClosed: b.pmClosed, supportClosed: b.supportClosed, retention: b.retention, fileMb: b.fileMb }));
+    if (b.retention) { await audit.log(req, 'Изменил автоудаление сообщений', { type: 'chat' }, 'ok', JSON.stringify(r.retention)); runChatRetention().catch(() => {}); }
+    if (b.fileMb !== undefined) await audit.log(req, 'Изменил лимит размера файла в чатах', { type: 'chat' }, 'ok', r.fileMb ? r.fileMb + ' МБ' : 'без ограничения');
+    if (b.pmClosed !== undefined) await audit.log(req, b.pmClosed ? 'Отключил личные сообщения' : 'Включил личные сообщения', { type: 'chat' });
+    if (b.supportClosed !== undefined) await audit.log(req, b.supportClosed ? 'Закрыл техподдержку' : 'Открыл техподдержку', { type: 'chat' });
+  }
+  res.json(r);
+}));
+router.post('/chatmod/user', perm('messages.send'), wrap(async (req, res) => {
+  const { userId, action, hours } = req.body || {}; if (!userId) throw bad('Не указан пользователь');
+  const who = req.admin && (req.admin.name || req.admin.login);
+  if (action === 'mute') { const until = await chatmod.setMute(userId, hours === 'forever' ? 'forever' : Math.max(1, Math.min(24 * 365, Number(hours) || 24)), who); await audit.log(req, 'Ограничил сообщения пользователя', { type: 'user', id: userId }, 'ok', until === 'forever' ? 'бессрочно' : 'до ' + until); return res.json({ ok: true, until }); }
+  if (action === 'unmute') { await chatmod.setMute(userId, 0); await audit.log(req, 'Снял ограничение сообщений', { type: 'user', id: userId }); return res.json({ ok: true }); }
+  if (action === 'block' || action === 'unblock') {
+    const on = action === 'block';
+    await community.setChatBan(userId, on); await require('../lib/pm').setBanned(userId, on); await chatmod.setSupportBan(userId, on);
+    if (!on) await chatmod.setMute(userId, 0);
+    await audit.log(req, on ? 'Заблокировал пользователя во всех чатах' : 'Разблокировал пользователя во всех чатах', { type: 'user', id: userId }); return res.json({ ok: true });
+  }
+  if (action === 'supportBan' || action === 'supportUnban') { await chatmod.setSupportBan(userId, action === 'supportBan'); await audit.log(req, action === 'supportBan' ? 'Запретил писать в техподдержку' : 'Разрешил писать в техподдержку', { type: 'user', id: userId }); return res.json({ ok: true }); }
+  throw bad('Неизвестное действие');
+}));
+// очистка чатов целиком: group | pm | support
+router.post('/chatmod/clear', perm('messages.send'), wrap(async (req, res) => {
+  const what = (req.body || {}).what; let n = 0;
+  if (what === 'group') n = await community.clearChat();
+  else if (what === 'pm') n = await require('../lib/pm').adminClear();
+  else if (what === 'support') n = await msgs.clearAll();
+  else throw bad('Не указан чат');
+  await audit.log(req, 'Очистил чат', { type: 'chat', id: what }, 'ok', 'удалено сообщений: ' + n); res.json({ ok: true, removed: n });
+}));
+// личные переписки пользователей — для модерации
+router.get('/pm/threads', perm('messages.send'), wrap(async (req, res) => {
+  const [list, usersData] = await Promise.all([require('../lib/pm').adminThreads(), readUsers()]);
+  const nm = {}; usersData.users.forEach((u) => { nm[u.id] = u.companyName || u.fullName || u.phone; });
+  res.json({ threads: list.slice(0, 500).map((t) => Object.assign(t, { names: t.users.map((u) => nm[u] || 'Удалённый пользователь') })) });
+}));
+router.get('/pm/threads/:key', perm('messages.send'), wrap(async (req, res) => {
+  const usersData = await readUsers(); const nm = {}; usersData.users.forEach((u) => { nm[u.id] = u.companyName || u.fullName || u.phone; });
+  const list = await require('../lib/pm').adminThread(req.params.key);
+  res.json({ messages: list.map((m) => Object.assign({}, m, { fromName: nm[m.from] || '—' })) });
+}));
+router.delete('/pm/threads/:key/:id', perm('messages.send'), wrap(async (req, res) => {
+  if (!(await require('../lib/pm').adminDelete(req.params.key, req.params.id))) throw bad('Сообщение не найдено', 404);
+  await audit.log(req, 'Удалил личное сообщение', { type: 'chat', id: req.params.key }); res.json({ ok: true });
+}));
+router.delete('/pm/threads/:key', perm('messages.send'), wrap(async (req, res) => {
+  const n = await require('../lib/pm').adminClear(req.params.key);
+  await audit.log(req, 'Очистил личную переписку', { type: 'chat', id: req.params.key }, 'ok', 'удалено: ' + n); res.json({ ok: true, removed: n });
+}));
+router.delete('/messages/threads/:userId', perm('messages.send'), wrap(async (req, res) => {
+  const n = await msgs.clearThread(req.params.userId);
+  await audit.log(req, 'Очистил переписку техподдержки', { type: 'user', id: req.params.userId }, 'ok', 'удалено: ' + n); res.json({ ok: true, removed: n });
+}));
+// автоудаление старых сообщений по настройкам модерации (раз в час)
+async function runChatRetention() {
+  const r = (await chatmod.get()).retention || {};
+  if (r.group) await community.pruneChat(r.group);
+  if (r.pm) await require('../lib/pm').prune(r.pm);
+  if (r.support) await msgs.prune(r.support);
+}
 router.delete('/group/messages/:id', perm('messages.send'), wrap(async (req, res) => {
   await community.deleteMessage(req.params.id); await audit.log(req, 'Удалил сообщение группы', { type: 'group', id: req.params.id }); res.json({ ok: true });
 }));
@@ -614,7 +723,7 @@ router.delete('/news/:id', perm('broadcast.send'), wrap(async (req, res) => {
 router.get('/blacklist/info', perm('blacklist.view'), wrap(async (req, res) => {
   const i = await blacklist.info();
   const all = await agg.loadAll(); const appCount = agg.buildClients(all, agg.localNow(await tz())).filter((c) => c.blacklisted).length;
-  res.json({ updatedAt: i.updatedAt, total: i.total + appCount, appClients: appCount, files: can(req, 'blacklist.edit') ? i.files : undefined });
+  res.json({ updatedAt: i.updatedAt, total: i.total + appCount, baseTotal: i.total, appClients: appCount, settings: i.settings, files: can(req, 'blacklist.edit') ? i.files : undefined });
 }));
 router.get('/blacklist/search', perm('blacklist.view'), wrap(async (req, res) => {
   const all = await agg.loadAll();
@@ -622,8 +731,45 @@ router.get('/blacklist/search', perm('blacklist.view'), wrap(async (req, res) =>
   res.json({ results });
 }));
 router.post('/blacklist/files', perm('blacklist.edit'), wrap(async (req, res) => {
-  let m; try { m = await blacklist.addFile(req.body || {}); } catch (e) { throw bad(e.message); }
+  let m; try { const b = req.body || {}; m = await blacklist.addFile({ name: b.name, content: b.content, dataUrl: b.dataUrl, split: b.split }); } catch (e) { throw bad(e.message); }
   await audit.log(req, 'Загрузил файл в базу ЧС', { type: 'blacklist', id: m.id }, 'ok', `${m.name}: ${m.entries} записей`); res.json({ file: m });
+}));
+router.get('/blacklist/files/:id', perm('blacklist.edit'), wrap(async (req, res) => {
+  const r = await blacklist.getFile(req.params.id); if (!r) throw bad('Файл не найден', 404); res.json(r);
+}));
+router.put('/blacklist/files/:id', perm('blacklist.edit'), wrap(async (req, res) => {
+  const b = req.body || {}; let f;
+  try { f = await blacklist.updateFile(req.params.id, { name: b.name, content: b.content, split: b.split }); } catch (e) { throw bad(e.message); }
+  if (!f) throw bad('Файл не найден', 404);
+  await audit.log(req, 'Изменил файл базы проверки клиента', { type: 'blacklist', id: f.id }, 'ok', `${f.name}: ${f.entries} записей`); res.json({ file: f });
+}));
+router.post('/blacklist/preview', perm('blacklist.edit'), wrap(async (req, res) => {
+  try { res.json(await blacklist.preview(req.body || {})); } catch (e) { throw bad(e.message); }
+}));
+router.put('/blacklist/settings', perm('blacklist.edit'), wrap(async (req, res) => {
+  const r = await blacklist.setSettings(req.body || {}); await audit.log(req, 'Изменил настройки карточек базы', { type: 'blacklist' }); res.json({ settings: r });
+}));
+// Telegram-бот, который пополняет базу
+router.get('/blacklist/bot', perm('blacklist.edit'), wrap(async (req, res) => { res.json(await tgbot.get()); }));
+router.put('/blacklist/bot', perm('blacklist.edit'), wrap(async (req, res) => {
+  let r; try { r = await tgbot.set(req.body || {}); } catch (e) { throw bad(e.message); }
+  await audit.log(req, 'Изменил настройки Telegram-бота базы', { type: 'blacklist' }, 'ok', r.enabled ? 'включён' : 'выключен'); res.json(r);
+}));
+// Общая база XCAR (чёрные списки и базы, которыми делятся пользователи приложения)
+router.get('/blacklist/common', perm('blacklist.view'), wrap(async (req, res) => {
+  res.json(checkshare.adminList(String(req.query.q || '').slice(0, 100), { hidden: req.query.hidden === '1', blOnly: req.query.bl === '1' }));
+}));
+router.put('/blacklist/common/:id', perm('blacklist.edit'), wrap(async (req, res) => {
+  if (!checkshare.adminEdit(req.params.id, req.body || {})) throw bad('Запись не найдена', 404);
+  await audit.log(req, 'Изменил запись общей базы', { type: 'blacklist' }); res.json({ ok: true });
+}));
+router.delete('/blacklist/common/:id', perm('blacklist.edit'), wrap(async (req, res) => {
+  if (!checkshare.adminHide(req.params.id, true)) throw bad('Запись не найдена', 404);
+  await audit.log(req, 'Удалил запись из общей базы', { type: 'blacklist' }); res.json({ ok: true });
+}));
+router.post('/blacklist/common/:id/restore', perm('blacklist.edit'), wrap(async (req, res) => {
+  checkshare.adminHide(req.params.id, false); checkshare.adminReset(req.params.id);
+  await audit.log(req, 'Восстановил запись общей базы', { type: 'blacklist' }); res.json({ ok: true });
 }));
 router.delete('/blacklist/files/:id', perm('blacklist.edit'), wrap(async (req, res) => {
   if (!(await blacklist.removeFile(req.params.id))) throw bad('Файл не найден', 404);
@@ -775,6 +921,9 @@ async function deliverBroadcasts() {
 }
 function startJobs() {
   setInterval(() => { deliverBroadcasts().catch((e) => console.error('Рассылки:', e.message)); }, 20000).unref();
+  setTimeout(() => runChatRetention().catch(() => {}), 30 * 1000).unref();
+  tgbot.start();
+  setInterval(() => { runChatRetention().catch((e) => console.error('Автоудаление сообщений:', e.message)); }, 60 * 60 * 1000).unref();
   setInterval(async () => { try { const s = await ctlSettings.get(); await backup.autoTick(s.backup); } catch (e) { console.error('Авто-бэкап:', e.message); } }, 5 * 60 * 1000).unref();
   setTimeout(async () => { try { const s = await ctlSettings.get(); await backup.autoTick(s.backup); } catch (e) {} }, 60 * 1000).unref();
   setInterval(async () => { try { const s = await ctlSettings.get(); await monitor.checkAll(s.servers); } catch (e) {} }, 60 * 1000).unref();

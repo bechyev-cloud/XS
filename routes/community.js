@@ -7,6 +7,9 @@ const { readUsers } = require('../lib/store');
 const c = require('../lib/community');
 
 const dm = require('../lib/control/messages');
+const mod = require('../lib/control/chatmod');
+// вложения (файлы, фото, резервные копии) — до 5 штук по 10 МБ
+function saveAtts(list, maxBytes) { const out = []; for (const a of (Array.isArray(list) ? list : []).slice(0, 5)) { if (!a || !a.dataUrl) continue; const m = dm.saveAttachment(a, maxBytes); out.push({ id: m.id, name: m.name, type: m.type, size: m.size, kind: /^image\//.test(m.type) ? 'image' : 'file' }); } return out; }
 
 const router = express.Router();
 // ссылки на вложения открываются в <img>/новой вкладке — токен можно передать в ?t=
@@ -47,7 +50,7 @@ function chatView(chat, userId, after) {
   else messages = messages.slice(-150);
   return {
     closed: !!chat.closed, banned: bans.includes(userId), isMod, delRev: chat.delRev || 0,
-    messages: messages.map((m) => Object.assign({ id: m.id, name: m.name, text: m.text, createdAt: m.createdAt, fromAdmin: !!m.fromAdmin,
+    messages: messages.map((m) => Object.assign({ id: m.id, name: m.name, text: m.text, attachments: m.attachments || [], createdAt: m.createdAt, fromAdmin: !!m.fromAdmin,
       mod: !!m.userId && mods.includes(m.userId), mine: m.userId === userId, uid: m.userId || null },
       isMod && m.userId ? { authorBanned: bans.includes(m.userId) } : {})),
     lastId: chat.messages.length ? chat.messages[chat.messages.length - 1].id : null,
@@ -55,18 +58,23 @@ function chatView(chat, userId, after) {
 }
 router.get('/chat', async (req, res) => {
   const chat = await c.readChat();
-  res.json(chatView(chat, req.userId, req.query.after));
+  const st = await mod.status(req.userId);
+  res.json(Object.assign(chatView(chat, req.userId, req.query.after), { mutedUntil: st.mutedUntil, fileMb: st.fileMb }));
 });
 router.post('/chat', chatLimiter, async (req, res) => {
   const text = String((req.body || {}).text || '').trim();
-  if (!text) return res.status(400).json({ error: 'Введите сообщение' });
+  const hasAtt = Array.isArray((req.body || {}).attachments) && req.body.attachments.length;
+  if (!text && !hasAtt) return res.status(400).json({ error: 'Введите сообщение' });
+  const deny = await mod.denyReason(req.userId, 'group'); if (deny) return res.status(403).json({ error: deny });
   const chat = await c.readChat();
   const isMod = (chat.mods || []).includes(req.userId);
   if (chat.closed && !isMod) return res.status(403).json({ error: 'Администратор закрыл группу — писать могут только администратор и модераторы' });
   if ((chat.bans || []).includes(req.userId)) return res.status(403).json({ error: 'Вам запрещено писать в группу' });
   const users = await readUsers();
   const u = users.users.find((x) => x.id === req.userId);
-  const m = await c.postMessage({ userId: req.userId, name: userName(u), text, fromMod: isMod });
+  let attachments = [];
+  try { attachments = saveAtts(req.body.attachments, await mod.maxBytes()); } catch (e) { return res.status(400).json({ error: e.message }); }
+  const m = await c.postMessage({ userId: req.userId, name: userName(u), text, fromMod: isMod, attachments });
   res.json({ ok: true, id: m.id });
 });
 async function needMod(req, res) {
@@ -100,7 +108,8 @@ router.get('/pm', async (req, res) => {
   const byId = {}; users.users.forEach((u) => { byId[u.id] = u; });
   const list = pm.dialogs(d, req.userId).filter((x) => byId[x.userId]).map((x) => Object.assign(pubUser(byId[x.userId]), x))
     .sort((a, b) => ((b.last && b.last.createdAt) || '').localeCompare((a.last && a.last.createdAt) || '') || a.name.localeCompare(b.name));
-  res.json({ dialogs: list, banned: (d.banned || []).includes(req.userId) });
+  const st = await mod.status(req.userId);
+  res.json({ dialogs: list, banned: (d.banned || []).includes(req.userId), pmClosed: st.pmClosed, mutedUntil: st.mutedUntil, fileMb: st.fileMb });
 });
 router.get('/pm/unread', async (req, res) => { res.json({ unread: await pm.unread(req.userId) }); });
 router.get('/pm/search', async (req, res) => {
@@ -128,28 +137,34 @@ router.post('/pm/block', async (req, res) => {
 });
 router.get('/pm/t/:uid', async (req, res) => {
   const u = await existingUser(req.params.uid); if (!u) return res.status(404).json({ error: 'Пользователь не найден' });
-  res.json(Object.assign({ user: pubUser(u) }, await pm.thread(req.userId, u.id, req.query.read === '1')));
+  const st = await mod.status(req.userId);
+  res.json(Object.assign({ user: pubUser(u), pmClosed: st.pmClosed, mutedUntil: st.mutedUntil }, await pm.thread(req.userId, u.id, req.query.read === '1')));
 });
 router.post('/pm/t/:uid', pmLimiter, async (req, res) => {
   const u = await existingUser(req.params.uid); if (!u) return res.status(404).json({ error: 'Пользователь не найден' });
-  try { const m = await pm.send(req.userId, u.id, (req.body || {}).text); res.json({ ok: true, id: m.id }); }
+  const deny = await mod.denyReason(req.userId, 'pm'); if (deny) return res.status(403).json({ error: deny });
+  try { const m = await pm.send(req.userId, u.id, (req.body || {}).text, saveAtts((req.body || {}).attachments, await mod.maxBytes())); res.json({ ok: true, id: m.id }); }
   catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // ---- Личные сообщения с администрацией XCAR (XCAR CONTROL → Сообщения) ----
 const dmLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false, message: { error: 'Слишком часто. Подождите немного.' } });
-router.get('/dm', async (req, res) => { res.json(await dm.getThreadForUser(req.userId, { markRead: req.query.read === '1' })); });
+router.get('/dm', async (req, res) => { const st = await mod.status(req.userId); res.json(Object.assign(await dm.getThreadForUser(req.userId, { markRead: req.query.read === '1' }), { supportClosed: st.supportClosed, supportBanned: st.supportBanned, mutedUntil: st.mutedUntil, fileMb: st.fileMb })); });
 router.get('/dm/unread', async (req, res) => { res.json(await dm.unreadForUser(req.userId)); });
 router.post('/dm', dmLimiter, async (req, res) => {
   const b = req.body || {};
-  try { const m = await dm.post(req.userId, { from: 'user', text: b.text, attachments: b.attachments }); res.json({ ok: true, id: m.id }); }
+  const deny = await mod.denyReason(req.userId, 'support'); if (deny) return res.status(403).json({ error: deny });
+  try { const m = await dm.post(req.userId, { from: 'user', text: b.text, attachments: b.attachments, maxBytes: await mod.maxBytes() }); res.json({ ok: true, id: m.id }); }
   catch (e) { res.status(400).json({ error: e.message }); }
 });
 router.get('/attachments/:id', async (req, res) => {
   const a = dm.readAttachment(req.params.id);
   if (!a) return res.status(404).json({ error: 'Файл не найден' });
-  const t = await dm.getThreadForUser(req.userId, {});
-  if (!t.messages.some((m) => (m.attachments || []).some((x) => x.id === req.params.id))) return res.status(404).json({ error: 'Файл не найден' });
+  const id = req.params.id; const hasIt = (list) => (list || []).some((m) => (m.attachments || []).some((x) => x.id === id));
+  let ok = hasIt((await dm.getThreadForUser(req.userId, {})).messages);
+  if (!ok) ok = hasIt((await c.readChat()).messages);
+  if (!ok) { const d = await pm.snapshot(); ok = Object.keys(d.threads || {}).some((k) => k.split('|').includes(req.userId) && hasIt(d.threads[k].messages)); }
+  if (!ok) return res.status(404).json({ error: 'Файл не найден' });
   res.setHeader('Content-Type', a.meta.type || 'application/octet-stream');
   res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(a.meta.name)}`);
   res.sendFile(a.file);

@@ -1,10 +1,11 @@
-const CACHE_NAME = 'xcar-v174';
+const CACHE_NAME = 'xcar-v232';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './default-cars.js'
 ];
 
 self.addEventListener('install', (event) => {

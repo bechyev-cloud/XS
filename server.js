@@ -90,7 +90,7 @@ app.get('/api/app/download/:platform', async (req, res) => {
 // Статистика проката: общая (все пользователи XCAR) или своя
 app.get('/api/market/stats', require('./lib/auth').authMiddleware, async (req, res) => {
   try { res.json(await require('./lib/market').compute({ period: req.query.period, scope: req.query.scope, userId: req.userId })); }
-  catch (e) { res.status(500).json({ error: 'Не удалось посчитать статистику' }); }
+  catch (e) { console.error('Статистика проката:', e); res.status(500).json({ error: 'Не удалось посчитать статистику: ' + (e && e.message || 'ошибка') }); }
 });
 // Готовые машины от администратора — приложение забирает их при запуске
 app.get('/api/presets/cars', require('./lib/auth').authMiddleware, async (req, res) => {

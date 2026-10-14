@@ -1,6 +1,6 @@
 {
   "name": "xcar-server",
-  "version": "2.3.0",
+  "version": "2.4.1",
   "private": true,
   "description": "Backend-сервер для XCAR: регистрация, вход и синхронизация данных между устройствами",
   "main": "server.js",

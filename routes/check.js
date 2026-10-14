@@ -29,7 +29,8 @@ router.get('/search', limiter, async (req, res) => {
   out.tgLocked = !(await tgAccess.approved(req.userId));
   if (!out.tgLocked && (src === 'all' || src === 'telegram') && q.length >= 2) {
     const bi = await blacklist.info(); const names = {}; bi.files.forEach((f) => { names[f.id] = f.name; });
-    out.telegram = (await blacklist.search(q, [])).slice(0, 100).map((e) => ({ id: e.id, title: e.title, text: e.text, file: names[String(e.id).split(':')[0]] || 'База', addedAt: e.addedAt }));
+    out.telegram = (await blacklist.search(q, [])).slice(0, 100).map((e) => ({ id: e.id, title: e.title, text: e.text, date: e.date, file: names[String(e.id).split(':')[0]] || 'База', addedAt: e.addedAt }));
+    out.tgUpdatedAt = bi.updatedAt;
   }
   res.json(out);
 });
@@ -43,10 +44,10 @@ router.get('/browse', limiter, async (req, res) => {
     const seen = new Set(); const out = [];
     for (const e of await blacklist.allEntries()) {
       const key = (e.title + '\n' + e.text).toLowerCase().replace(/\s+/g, ' ').trim(); if (seen.has(key)) continue; seen.add(key);
-      out.push({ id: e.id, title: e.title, text: e.text, file: names[String(e.id).split(':')[0]] || 'База', addedAt: e.addedAt });
+      out.push({ id: e.id, title: e.title, text: e.text, date: e.date, file: names[String(e.id).split(':')[0]] || 'База', addedAt: e.addedAt });
       if (out.length >= 3000) break;
     }
-    return res.json({ telegram: out });
+    return res.json({ telegram: out, tgUpdatedAt: bi.updatedAt });
   }
   res.json({ xcar: share.list(req.userId, { blOnly: locked }), xcarLocked: locked });
 });

@@ -3,7 +3,8 @@ const rateLimit = require('express-rate-limit');
 const { readUsers, writeUsers } = require('../lib/store');
 const { readConfig, getPlanById, computeTariffAmount } = require('../lib/config');
 const { publicSubscription, ensureSubscription, extendSubscription } = require('../lib/subscription');
-const { createRequest } = require('../lib/requests');
+const { createRequest, listRequests } = require('../lib/requests');
+const dm = require('../lib/control/messages');
 const { authMiddleware } = require('../lib/auth');
 
 const router = express.Router();
@@ -63,6 +64,44 @@ router.post('/request', requestLimiter, async (req, res) => {
   const amount = computeTariffAmount(plan.price, m, cfg.discounts);
   const request = await createRequest(user.id, plan.id, m, contactPhone, clientName, paymentBank);
   res.json({ ok: true, request, plan, months: m, amount, payment: cfg.payment });
+});
+
+// GET /api/billing/payment?planId=&months= — сумма и реквизиты для оплаты (QR, карты, телефон, ФИО)
+router.get('/payment', async (req, res) => {
+  const cfg = await readConfig();
+  const plan = getPlanById(cfg, req.query.planId);
+  if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
+  const m = Number(req.query.months) || 1;
+  if (!ALLOWED_MONTHS.includes(m)) return res.status(400).json({ error: 'Срок подписки должен быть 1, 3, 6 или 12 месяцев' });
+  res.json({ plan, months: m, amount: computeTariffAmount(plan.price, m, cfg.discounts), payment: cfg.payment });
+});
+// POST /api/billing/pay — клиент оплатил по реквизитам и отправил заявку (можно приложить чек)
+router.post('/pay', requestLimiter, async (req, res) => {
+  const b = req.body || {};
+  const cfg = await readConfig();
+  const plan = getPlanById(cfg, b.planId);
+  if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
+  const m = Number(b.months) || 1;
+  if (!ALLOWED_MONTHS.includes(m)) return res.status(400).json({ error: 'Срок подписки должен быть 1, 3, 6 или 12 месяцев' });
+  const { user } = await getSelfUser(req);
+  if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+  const mine = (await listRequests()).filter((r) => r.userId === user.id && r.status === 'pending');
+  if (mine.length >= 3) return res.status(400).json({ error: 'У вас уже есть заявки на проверке — дождитесь ответа администратора' });
+  let receipt = null;
+  if (b.receipt && b.receipt.dataUrl) {
+    try { const a = dm.saveAttachment({ name: b.receipt.name || 'чек', type: b.receipt.type, dataUrl: b.receipt.dataUrl }, 15 * 1048576); receipt = { id: a.id, name: a.name, type: a.type, size: a.size }; }
+    catch (e) { return res.status(400).json({ error: e.message }); }
+  }
+  const amount = computeTariffAmount(plan.price, m, cfg.discounts);
+  const request = await createRequest(user.id, plan.id, m, b.contactPhone || user.phone, b.clientName || user.fullName, b.paymentBank, { amount, receipt, comment: b.comment, paid: true });
+  res.json({ ok: true, request });
+});
+// GET /api/billing/requests — мои заявки на оплату (статус проверки)
+router.get('/requests', async (req, res) => {
+  const cfg = await readConfig();
+  const list = (await listRequests()).filter((r) => r.userId === req.userId).slice(0, 20)
+    .map((r) => ({ id: r.id, planId: r.planId, planName: (getPlanById(cfg, r.planId) || {}).name || r.planId, months: r.months, amount: r.amount, status: r.status, note: r.note || '', createdAt: r.createdAt, resolvedAt: r.resolvedAt, hasReceipt: !!r.receipt }));
+  res.json({ requests: list });
 });
 
 // POST /api/billing/activate-free  { planId }
