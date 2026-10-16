@@ -9,7 +9,7 @@ const c = require('../lib/community');
 const dm = require('../lib/control/messages');
 const mod = require('../lib/control/chatmod');
 // вложения (файлы, фото, резервные копии) — до 5 штук по 10 МБ
-function saveAtts(list, maxBytes) { const out = []; for (const a of (Array.isArray(list) ? list : []).slice(0, 5)) { if (!a || !a.dataUrl) continue; const m = dm.saveAttachment(a, maxBytes); out.push({ id: m.id, name: m.name, type: m.type, size: m.size, kind: /^image\//.test(m.type) ? 'image' : 'file' }); } return out; }
+function saveAtts(list, maxBytes) { const out = []; for (const a of (Array.isArray(list) ? list : []).slice(0, 5)) { if (!a || !a.dataUrl) continue; const m = dm.saveAttachment(a, maxBytes); out.push(dm.attOf(m, a)); } return out; }
 
 const router = express.Router();
 // ссылки на вложения открываются в <img>/новой вкладке — токен можно передать в ?t=
@@ -43,14 +43,15 @@ router.post('/news/:id/rate', async (req, res) => {
 // Модераторы (назначает администратор в XCAR CONTROL) могут писать в закрытую группу,
 // удалять сообщения участников и запрещать им писать.
 function userName(u) { return u ? ((u.companyName || u.fullName || 'Пользователь') + (u.companyName && u.fullName ? ' · ' + u.fullName : '')) : 'Пользователь'; }
-function chatView(chat, userId, after) {
+function chatView(chat, userId, after, since) {
   const mods = chat.mods || []; const bans = chat.bans || []; const isMod = mods.includes(userId);
-  let messages = chat.messages;
+  // кто присоединился позже — не видит переписку, которая была до его регистрации
+  let messages = since ? chat.messages.filter((m) => m.createdAt >= since) : chat.messages;
   if (after) { const i = messages.findIndex((m) => m.id === after); if (i >= 0) messages = messages.slice(i + 1); else messages = messages.slice(-150); }
   else messages = messages.slice(-150);
   return {
     closed: !!chat.closed, banned: bans.includes(userId), isMod, delRev: chat.delRev || 0,
-    messages: messages.map((m) => Object.assign({ id: m.id, name: m.name, text: m.text, attachments: m.attachments || [], createdAt: m.createdAt, fromAdmin: !!m.fromAdmin,
+    messages: messages.map((m) => Object.assign({ id: m.id, name: m.name, text: m.text, attachments: m.attachments || [], createdAt: m.createdAt, fromAdmin: !!m.fromAdmin, deleted: !!m.deleted,
       mod: !!m.userId && mods.includes(m.userId), mine: m.userId === userId, uid: m.userId || null },
       isMod && m.userId ? { authorBanned: bans.includes(m.userId) } : {})),
     lastId: chat.messages.length ? chat.messages[chat.messages.length - 1].id : null,
@@ -59,7 +60,13 @@ function chatView(chat, userId, after) {
 router.get('/chat', async (req, res) => {
   const chat = await c.readChat();
   const st = await mod.status(req.userId);
-  res.json(Object.assign(chatView(chat, req.userId, req.query.after), { mutedUntil: st.mutedUntil, fileMb: st.fileMb }));
+  const me = (await readUsers()).users.find((x) => x.id === req.userId);
+  res.json(Object.assign(chatView(chat, req.userId, req.query.after, me && me.createdAt), { mutedUntil: st.mutedUntil, fileMb: st.fileMb }));
+});
+// своё сообщение в группе — удалить у всех (в течение 3 часов)
+router.delete('/chat/my/:id', async (req, res) => {
+  try { await c.deleteOwnMessage(req.userId, req.params.id, dm.DELETE_FOR_ALL_MS); res.json({ ok: true }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
 });
 router.post('/chat', chatLimiter, async (req, res) => {
   const text = String((req.body || {}).text || '').trim();
@@ -140,6 +147,10 @@ router.get('/pm/t/:uid', async (req, res) => {
   const st = await mod.status(req.userId);
   res.json(Object.assign({ user: pubUser(u), pmClosed: st.pmClosed, mutedUntil: st.mutedUntil }, await pm.thread(req.userId, u.id, req.query.read === '1')));
 });
+router.delete('/pm/t/:uid/m/:id', async (req, res) => {
+  try { await pm.deleteOwn(req.userId, req.params.uid, req.params.id, dm.DELETE_FOR_ALL_MS); res.json({ ok: true }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
 router.post('/pm/t/:uid', pmLimiter, async (req, res) => {
   const u = await existingUser(req.params.uid); if (!u) return res.status(404).json({ error: 'Пользователь не найден' });
   const deny = await mod.denyReason(req.userId, 'pm'); if (deny) return res.status(403).json({ error: deny });
@@ -155,6 +166,10 @@ router.post('/dm', dmLimiter, async (req, res) => {
   const b = req.body || {};
   const deny = await mod.denyReason(req.userId, 'support'); if (deny) return res.status(403).json({ error: deny });
   try { const m = await dm.post(req.userId, { from: 'user', text: b.text, attachments: b.attachments, maxBytes: await mod.maxBytes() }); res.json({ ok: true, id: m.id }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+router.delete('/dm/:id', async (req, res) => {
+  try { await dm.deleteOwnByUser(req.userId, req.params.id); res.json({ ok: true }); }
   catch (e) { res.status(400).json({ error: e.message }); }
 });
 router.get('/attachments/:id', async (req, res) => {

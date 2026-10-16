@@ -27,7 +27,7 @@ async function getSelfUser(req) {
 // GET /api/billing/plans — список тарифов
 router.get('/plans', async (req, res) => {
   const cfg = await readConfig();
-  res.json({ plans: cfg.plans, trialDays: cfg.trialDays, discounts: cfg.discounts });
+  res.json({ plans: cfg.plans, trialDays: cfg.trialDays, discounts: cfg.discounts, promo: cfg.promo });
 });
 
 // GET /api/billing/status — актуальный статус подписки текущего аккаунта

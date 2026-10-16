@@ -51,6 +51,8 @@ function publicUser(u, cfg) {
     phone: u.phone,
     email: u.email,
     createdAt: u.createdAt,
+    profileChangedAt: u.profileChangedAt || {},
+    mustChangePassword: !!u.mustChangePassword,
     subscription: cfg ? publicSubscription(u.subscription, cfg) : undefined
   };
 }
@@ -278,6 +280,7 @@ router.post('/reset', forgotLimiter, async (req, res) => {
     }
 
     user.passwordHash = await hashPassword(newPassword);
+    delete user.mustChangePassword;
     delete user.resetCodeHash; delete user.resetCodeExpires; delete user.resetAttempts;
     delete user.resetCodeMethod; delete user.resetRequestedAt;
     await writeUsers(usersData);
@@ -286,6 +289,85 @@ router.post('/reset', forgotLimiter, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+// ---- Смена названия компании и имени: не чаще одного раза в 7 дней, без повторов у других пользователей ----
+const PROFILE_FIELDS = { companyName: 'Название компании', fullName: 'Имя' };
+const PROFILE_COOLDOWN_MS = 7 * 24 * 3600 * 1000;
+const normName = (v) => String(v || '').trim().replace(/\s+/g, ' ').toLowerCase().replace(/ё/g, 'е');
+// GET /api/auth/profile/status — когда можно менять каждое поле (время сервера)
+router.get('/profile/status', authMiddleware, async (req, res) => {
+  const user = (await readUsers()).users.find(u => u.id === req.userId);
+  if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+  const now = Date.now(); const ch = user.profileChangedAt || {}; const out = {};
+  Object.keys(PROFILE_FIELDS).forEach((f) => { const t = ch[f] ? Date.parse(ch[f]) : 0; const next = t ? t + PROFILE_COOLDOWN_MS : 0; out[f] = { changedAt: ch[f] || null, nextAt: next > now ? new Date(next).toISOString() : null }; });
+  res.json({ ok: true, now: new Date(now).toISOString(), fields: out, user: { companyName: user.companyName, fullName: user.fullName } });
+});
+// PUT /api/auth/profile  { field: 'companyName'|'fullName', value }
+router.put('/profile', authMiddleware, async (req, res) => {
+  try {
+    const { field } = req.body || {};
+    const value = String((req.body || {}).value || '').trim().replace(/\s+/g, ' ');
+    if (!PROFILE_FIELDS[field]) return res.status(400).json({ error: 'Это поле нельзя изменить' });
+    if (value.length < 2) return res.status(400).json({ error: PROFILE_FIELDS[field] + ': не короче 2 символов' });
+    if (value.length > 60) return res.status(400).json({ error: PROFILE_FIELDS[field] + ': не длиннее 60 символов' });
+    const usersData = await readUsers();
+    const user = usersData.users.find(u => u.id === req.userId);
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+    if (normName(user[field]) === normName(value)) return res.status(400).json({ error: 'Новое значение совпадает с текущим' });
+    const ch = user.profileChangedAt || {};
+    const last = ch[field] ? Date.parse(ch[field]) : 0;
+    if (last && Date.now() - last < PROFILE_COOLDOWN_MS) {
+      return res.status(429).json({ error: PROFILE_FIELDS[field] + ' можно менять раз в 7 дней', nextAt: new Date(last + PROFILE_COOLDOWN_MS).toISOString(), now: new Date().toISOString() });
+    }
+    const taken = usersData.users.some(u => u.id !== user.id && normName(u[field]) === normName(value));
+    if (taken) return res.status(409).json({ error: field === 'companyName' ? 'Компания с таким названием уже есть в XCAR — выберите другое' : 'Пользователь с таким именем уже есть в XCAR — добавьте фамилию или отчество' });
+    user[field] = value;
+    user.profileChangedAt = Object.assign({}, ch, { [field]: new Date().toISOString() });
+    await writeUsers(usersData);
+    const cfg = await readConfig();
+    res.json({ ok: true, user: publicUser(user, cfg), nextAt: new Date(Date.now() + PROFILE_COOLDOWN_MS).toISOString() });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+// ---- Смена пароля самим пользователем: текущий → новый ----
+// PUT /api/auth/password  { currentPassword, newPassword }
+router.put('/password', authLimiter, authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword) return res.status(400).json({ error: 'Введите текущий пароль' });
+    if (!newPassword || String(newPassword).length < 6) return res.status(400).json({ error: 'Новый пароль должен быть не короче 6 символов' });
+    if (String(newPassword).length > 100) return res.status(400).json({ error: 'Слишком длинный пароль' });
+    const usersData = await readUsers();
+    const user = usersData.users.find(u => u.id === req.userId);
+    if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
+    const ok = await comparePassword(String(currentPassword), user.passwordHash);
+    if (!ok) return res.status(400).json({ error: 'Текущий пароль указан неверно' });
+    if (await comparePassword(String(newPassword), user.passwordHash)) return res.status(400).json({ error: 'Новый пароль совпадает с текущим' });
+    user.passwordHash = await hashPassword(String(newPassword));
+    user.passwordChangedAt = new Date().toISOString();
+    delete user.mustChangePassword;
+    await writeUsers(usersData);
+    const cfg = await readConfig();
+    res.json({ ok: true, user: publicUser(user, cfg) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
+});
+
+// ---- «Забыл пароль» через администратора: заявка уходит в XCAR CONTROL ----
+// POST /api/auth/recovery-request  { lastName, firstName, middleName, phone, company, contact, note }
+router.post('/recovery-request', forgotLimiter, async (req, res) => {
+  try {
+    const it = await require('../lib/control/pwrequests').create(req.body, req.ip);
+    res.json({ ok: true, id: it.id });
+  } catch (e) {
+    res.status(400).json({ error: e.message || 'Не удалось отправить заявку' });
   }
 });
 

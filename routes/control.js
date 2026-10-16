@@ -27,6 +27,7 @@ const chatmod = require('../lib/control/chatmod');
 const tgbot = require('../lib/control/tgbot');
 const checkshare = require('../lib/checkshare');
 const { jsonFile } = require('../lib/control/jsonfile');
+const pwreq = require('../lib/control/pwrequests');
 
 const router = express.Router();
 const stateDb = jsonFile('control-state.json', () => ({ read: {} }));
@@ -98,7 +99,7 @@ router.use(auth);
 router.get('/me', wrap(async (req, res) => {
   const rec = await rbac.getAdmin(req.admin.id);
   res.json({ admin: Object.assign(rbac.publicAdmin(rec), { perms: req.admin.perms, sid: req.admin.sid }), roles: rbac.ROLES, permissions: rbac.PERMISSIONS,
-    unreadMessages: can(req, 'messages.view') ? await msgs.totalUnreadForAdmin() : 0, pendingPayments: can(req, 'payments.view') ? await pendingCount() : 0 });
+    unreadMessages: can(req, 'messages.view') ? await msgs.totalUnreadForAdmin() : 0, pendingPayments: can(req, 'payments.view') ? await pendingCount() : 0, pendingPw: can(req, 'users.view') ? await pwreq.pendingCount() : 0 });
 }));
 router.post('/logout', wrap(async (req, res) => { await rbac.revokeSession(req.admin.sid); await audit.log(req, 'Выход из XCAR CONTROL', { type: 'auth' }); res.json({ ok: true }); }));
 router.get('/me/sessions', wrap(async (req, res) => {
@@ -183,6 +184,7 @@ async function computeNotifications(req) {
     agg.buildPayments(all, [], all.cfg).filter((p) => p.date && p.date.slice(0, 10) >= agg.addDays(now.slice(0, 10), -2)).slice(0, 30)
       .forEach((p) => add({ key: `pay:${p.uid}`, type: 'success', title: 'Новый платёж', text: `${p.amount.toLocaleString('ru-RU')} ₽ · ${p.client} · ${p.account}`, sortAt: p.date, route: `payments?q=${encodeURIComponent(p.client)}` }));
   }
+  if (can(req, 'users.view')) (await pwreq.list()).filter((r) => r.status === 'pending').forEach((r) => add({ key: `pw:${r.id}:${r.updatedAt || r.createdAt}`, type: 'important', title: 'Забыл пароль', text: `${[r.lastName, r.firstName].filter(Boolean).join(' ')} · ${r.phone}${r.company ? ' · ' + r.company : ''}`, at: r.updatedAt || r.createdAt, route: 'pwreset' }));
   if (can(req, 'messages.view')) { const byId = new Map(all.accounts.map((a) => [a.user.id, a.user])); (await msgs.threadsSummary(byId)).filter((t) => t.unread).forEach((t) => add({ key: `msg:${t.userId}:${t.last.at}`, type: 'info', title: `Новое сообщение · ${t.name}`, text: t.last.text, at: t.last.at, route: `messages/${t.userId}` })); }
   const allowed = s.notifications;
   const st = await stateDb.read(); const read = (st.read && st.read[req.admin.id]) || {};
@@ -271,8 +273,40 @@ router.put('/users/:id/password', perm('users.edit'), wrap(async (req, res) => {
   const { password } = req.body || {};
   if (!password || String(password).length < 6) throw bad('Пароль должен быть не короче 6 символов');
   const hash = await hashPassword(String(password));
-  const { user } = await mutateUser(req.params.id, (u) => { u.passwordHash = hash; });
+  const { user } = await mutateUser(req.params.id, (u) => { u.passwordHash = hash; u.mustChangePassword = true; });
   await audit.log(req, 'Сбросил пароль аккаунта', { type: 'user', id: user.id, name: user.companyName });
+  res.json({ ok: true });
+}));
+/* ---- заявки «Забыл пароль» ---- */
+const last10 = (p) => String(p || '').replace(/\D/g, '').slice(-10);
+function matchUsers(users, r) {
+  const ph = last10(r.phone);
+  return users.filter((u) => ph.length >= 6 && last10(u.phone) === ph);
+}
+router.get('/pw-requests', perm('users.view'), wrap(async (req, res) => {
+  const users = (await readUsers()).users;
+  const items = (await pwreq.list()).map((r) => Object.assign({}, r, { matches: matchUsers(users, r).map((u) => ({ id: u.id, companyName: u.companyName, fullName: u.fullName, phone: u.phone, createdAt: u.createdAt, lastLoginAt: u.lastLoginAt || null, blocked: !!u.blocked })) }));
+  res.json({ items });
+}));
+router.post('/pw-requests/:id/password', perm('users.edit'), wrap(async (req, res) => {
+  const { password, userId, message } = req.body || {};
+  if (!password || String(password).length < 6) throw bad('Пароль должен быть не короче 6 символов');
+  const r = await pwreq.get(req.params.id); if (!r) throw bad('Заявка не найдена', 404);
+  const users = (await readUsers()).users;
+  const m = matchUsers(users, r); const uid = userId || (m[0] && m[0].id);
+  if (!uid) throw bad('Не найден аккаунт с таким телефоном — уточните номер у пользователя');
+  const hash = await hashPassword(String(password));
+  const { user } = await mutateUser(uid, (u) => { u.passwordHash = hash; u.mustChangePassword = true; delete u.resetCodeHash; delete u.resetCodeExpires; delete u.resetAttempts; });
+  await pwreq.resolve(r.id, 'done', req.admin.name, { userId: user.id });
+  const text = String(message || '').trim() || 'Ваш пароль сброшен администратором XCAR. Войдите с временным паролем, который вам сообщили, и смените его на свой: Настройки → Аккаунт → Сменить пароль.';
+  try { await msgs.post(user.id, { from: 'admin', text, adminName: req.admin.name }); } catch (e) { /* сообщение не обязательно */ }
+  await audit.log(req, 'Задал новый пароль по заявке «Забыл пароль»', { type: 'user', id: user.id, name: user.companyName });
+  res.json({ ok: true, userId: user.id });
+}));
+router.post('/pw-requests/:id/reject', perm('users.edit'), wrap(async (req, res) => {
+  const r = await pwreq.get(req.params.id); if (!r) throw bad('Заявка не найдена', 404);
+  await pwreq.resolve(r.id, 'rejected', req.admin.name, { note: String((req.body || {}).note || '').slice(0, 300) });
+  await audit.log(req, 'Отклонил заявку «Забыл пароль»', { type: 'pwreq', id: r.id }, 'ok', r.phone);
   res.json({ ok: true });
 }));
 router.delete('/users/:id', perm('users.delete'), wrap(async (req, res) => {

@@ -2,7 +2,7 @@ const express = require('express');
 const { authMiddleware } = require('../lib/auth');
 const { readStore, writeStore, writeStoreKey, syncStoreKey, readRevs, readUsers, EMPTY_STORE } = require('../lib/store');
 const { readConfig } = require('../lib/config');
-const { computeStatus, trialSubscription } = require('../lib/subscription');
+const { computeStatus, trialSubscription, effectiveCarLimit } = require('../lib/subscription');
 const push = require('../lib/push');
 
 const router = express.Router();
@@ -19,7 +19,7 @@ async function checkCarLimit(userId, newCars) {
   if (!user) return null;
   const cfg = await readConfig();
   const sub = user.subscription || trialSubscription(cfg);
-  const limit = sub.carLimit || 0;
+  const limit = effectiveCarLimit(sub, cfg);
   if (newCars.length > limit) {
     return `Превышен лимит машин по вашему тарифу (${limit}). Выберите тариф с большим лимитом в приложении → Настройки → Тариф.`;
   }

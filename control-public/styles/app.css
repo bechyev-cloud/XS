@@ -802,3 +802,9 @@ mark{background:rgba(227,38,46,.22);color:inherit;border-radius:3px;padding:0 1p
 .pr-kpi b{font-size:28px;font-family:var(--font-display);}
 .pr-kpi span{font-size:12px;color:var(--muted);}
 .pr-kpi.g b{color:var(--green);} .pr-kpi.r b{color:var(--red-2);}
+
+/* «Забыл пароль» — найденный аккаунт */
+.pw-acc{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2,rgba(127,127,127,.06));margin-top:6px}
+.pw-acc>svg{width:18px;height:18px;flex-shrink:0;opacity:.7}
+.pw-acc>div{flex:1}
+.pw-acc.none{border-style:dashed;color:var(--orange,#f59e0b)}
