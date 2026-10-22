@@ -30,6 +30,10 @@ owner.get('/photos/:carId/:id', (req, res) => {
   if (!require('fs').existsSync(f)) return res.status(404).end();
   res.setHeader('Cache-Control', 'private, max-age=86400'); res.type('jpg').sendFile(f);
 });
+// логотип для клиентов (квадратный и широкий)
+owner.post('/logo/:kind', express.json({ limit: '4mb' }), async (req, res) => { const r = park.setLogo(req.userId, await loginOf(req.userId), req.params.kind, (req.body || {}).data); res.status(r.ok ? 200 : 400).json(r); });
+owner.delete('/logo/:kind', (req, res) => { res.json(park.delLogo(req.userId, req.params.kind)); });
+owner.get('/logo/:kind', (req, res) => { const x = park.logoFileOwner(req.userId, req.params.kind); if (!x) return res.status(404).end(); res.setHeader('Cache-Control', 'private, no-cache'); res.type(x.mime).sendFile(x.f); });
 // свой адрес ссылки: проверка «свободен ли» и сохранение
 owner.get('/share/check', (req, res) => { res.json(park.checkName(req.userId, req.query.name)); });
 owner.post('/share/name', async (req, res) => {
@@ -61,6 +65,10 @@ pub.get('/park/:token/photo/:carId', async (req, res) => {
   res.end(Buffer.from(m[2], 'base64'));
 });
 
+pub.get('/park/:token/logo/:kind', (req, res) => {
+  const x = tokOk(req.params.token) ? park.logoFile(req.params.token, req.params.kind) : null; if (!x) return res.status(404).end();
+  res.setHeader('Cache-Control', 'public, max-age=604800, immutable'); res.type(x.mime).sendFile(x.f);
+});
 pub.get('/park/:token/g/:carId/:id', (req, res) => {
   const f = tokOk(req.params.token) ? park.photoFile(req.params.token, req.params.carId, req.params.id) : null;
   if (!f) return res.status(404).end();

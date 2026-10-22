@@ -120,6 +120,42 @@ html.lk,html.lk body{overflow:hidden}
 body.appb .top>div{max-width:none}
 main.appm{max-width:none;padding:0 0 calc(20px + env(safe-area-inset-bottom))}
 main.appm iframe{display:block;width:100%;border:0;height:600px;background:transparent}
+.fd-s{font-size:13px;color:var(--dim);font-weight:600;margin-top:3px}
+.fd-map{position:relative;display:block;height:150px;border-radius:20px;overflow:hidden;margin-top:4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23eae6dc'/%3E%3Cpath d='M0 140 C80 120 120 160 200 130 S320 90 400 110' stroke='%23fff' stroke-width='14' fill='none'/%3E%3Cpath d='M120 0 L160 200' stroke='%23fff' stroke-width='10'/%3E%3Cpath d='M260 0 C250 60 300 120 280 200' stroke='%23fff' stroke-width='8' fill='none'/%3E%3Crect x='20' y='20' width='80' height='60' rx='8' fill='%23dcd6c7'/%3E%3Crect x='300' y='30' width='70' height='50' rx='8' fill='%23d4e4cf'/%3E%3Crect x='190' y='150' width='60' height='40' rx='8' fill='%23dcd6c7'/%3E%3C/svg%3E") center/cover}
+.fd-pin{position:absolute;left:50%;top:46%;width:46px;height:46px;margin:-46px 0 0 -23px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#f2a93b;box-shadow:0 8px 18px rgba(242,169,59,.6);display:grid;place-items:center;animation:fdb 2s ease-in-out infinite}
+.fd-pin b{width:16px;height:16px;border-radius:50%;background:#fff}
+@keyframes fdb{0%,100%{translate:0 0}50%{translate:0 -6px}}
+.fd-ad{display:flex;align-items:center;gap:12px;margin-top:16px}.fd-ad>div{flex:1;min-width:0}.fd-at{font-size:18px;font-weight:800;letter-spacing:-.2px}
+.fd-cp{width:42px;height:42px;border-radius:12px;border:0;background:var(--soft);color:var(--tx);display:grid;place-items:center;cursor:pointer;flex-shrink:0;transition:.2s}.fd-cp svg{width:18px;height:18px}.fd-cp.ok{background:#e3f6ee;color:#13a06a}
+.fd-g{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.fd-b{display:flex;align-items:center;justify-content:center;gap:9px;height:52px;border-radius:16px;background:var(--soft);color:var(--tx);font-weight:800;font-size:15px;text-decoration:none}
+.fd-b svg{width:20px;height:20px}.fd-b.k{background:var(--tx);color:var(--bg)}.fd-b.w{background:#1fae5b;color:#fff}
+@media (prefers-color-scheme:dark){.fd-map{filter:brightness(.82) saturate(.8)}}
+.mk.i{background:transparent;overflow:hidden;padding:0}.mk.i img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.mk.w{width:auto;max-width:240px;height:42px;background:transparent;border-radius:0;padding:0}.mk.w img{height:100%;width:auto;max-width:240px;object-fit:contain;display:block}
+.top.lgw .co b{display:none}.top.lgw .co span{margin-top:0}
+@media(max-width:719px){.mk.w{max-width:170px;height:36px}.mk.w img{max-width:170px}}
+.md.cen{align-items:center;padding:16px}.in-hd .in-lg span{display:block;font-size:28px;color:var(--bg);margin:0;font-weight:800}
+.md.cen>div.in{position:relative;border-radius:28px;max-width:520px;padding:30px 24px 24px;transform:translateY(14px) scale(.97);transition:transform .3s cubic-bezier(.2,.9,.3,1.1)}
+.md.cen.on>div.in{transform:none}.md.cen .hn{display:none}
+.in-x{position:absolute!important;right:14px;top:14px;background:var(--soft)!important;color:var(--tx)!important}
+.in-hd{text-align:center}.in-lg{width:64px;height:64px;margin:0 auto 12px;border-radius:20px;overflow:hidden;background:var(--tx);color:var(--bg);display:grid;place-items:center;font-weight:800;font-size:26px;box-shadow:0 12px 28px -12px rgba(0,0,0,.45)}
+.in-lg img{width:100%;height:100%;object-fit:cover}.in-hd b{display:block;font-size:21px;font-weight:800;letter-spacing:-.3px}.in-hd span{display:block;font-size:13px;color:var(--dim);font-weight:600;margin-top:3px}
+.in-sec{margin-top:20px;padding:16px 18px;border-radius:20px;background:var(--soft)}
+.in-t{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}.in-t svg{width:16px;height:16px;color:#f2a93b}
+.in-ab{font-size:15px;line-height:1.6;color:var(--sub);white-space:pre-wrap}
+.in-ul{list-style:none;display:grid;gap:10px;margin:0;padding:0}.in-ul li{display:flex;gap:11px;align-items:flex-start;font-size:15px;font-weight:600;line-height:1.45}
+.in-ul i{width:22px;height:22px;border-radius:50%;background:#f2a93b;color:#1a1204;display:grid;place-items:center;flex-shrink:0;margin-top:1px}.in-ul i svg{width:13px;height:13px}
+.in-ad{display:flex;align-items:center;gap:12px;margin-top:12px;padding:14px 16px;border-radius:20px;border:1px solid var(--line);text-decoration:none;color:var(--tx)}
+.in-ad>i{width:42px;height:42px;border-radius:14px;background:#fff2d9;color:#c77b06;display:grid;place-items:center;flex-shrink:0}.in-ad>i svg,.in-ad em svg{width:20px;height:20px}
+.in-ad span{flex:1;min-width:0}.in-ad small{display:block;font-size:12px;color:var(--dim);font-weight:700}.in-ad b{display:block;font-size:16px;font-weight:800;margin-top:2px}.in-ad em{color:var(--dim)}
+.in-bt{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+main>.section-title{margin-top:52px!important}
+#ld{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .35s}#ld.out{opacity:0;pointer-events:none}
+.ld-c{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}.ld-c b{font-size:17px;font-weight:800;margin-top:14px;color:var(--tx)}.ld-c span{font-size:13px;color:var(--dim);font-weight:600}
+.ld-r{position:relative;width:76px;height:76px;display:grid;place-items:center;color:var(--tx)}.ld-r>svg:last-child{width:30px;height:30px}
+.ld-r svg:first-child{position:absolute;inset:0;width:76px;height:76px;transform:rotate(-90deg)}.ld-r circle{fill:none;stroke:var(--line);stroke-width:3}
+.ld-r circle.p{stroke:#f2a93b;stroke-linecap:round;stroke-dasharray:119.4;stroke-dashoffset:119.4;transition:stroke-dashoffset .3s}
 </style></head><body>
 <header class="top"><div><div class="mk" id="mk">·</div><div class="co"><b id="co">&nbsp;</b><span>Автомобили в аренду</span></div><div class="acts" id="acts"></div></div></header>
 <main id="app"><div class="lead"><h1>&nbsp;</h1></div><div class="grid"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div></main>
@@ -164,15 +200,23 @@ function card(c){var s=ST[c.status]||ST.free;var u=photos(c);
     '<div class="bd"><div class="nm">'+e(c.make+' '+c.model)+'</div>'+(meta?'<div class="mt">'+meta+'</div>':'')+
     (c.rate?'<div class="pr">'+money(c.rate)+' <small>/ сутки</small></div>':'')+(un?'<div class="un" style="--c:'+s[1]+'">'+e(un)+'</div>':'')+'</div></div>';}
 function head(){
-  var co=D.company||'Автопрокат'; document.getElementById('co').textContent=co; document.getElementById('mk').textContent=(co.trim().charAt(0)||'·').toUpperCase();
+  var co=D.company||'Автопрокат', L=D.logo||{}, mk=document.getElementById('mk'), cob=document.getElementById('co'), top=document.querySelector('.top');
+  // логотип: широкий — на широком экране (или если квадратного нет), квадратный — на телефоне
+  var wideNow=window.innerWidth>=720, useW=L.wide&&(wideNow||!L.sq);
+  top.classList.toggle('lgw',!!useW);
+  if(useW){mk.innerHTML='<img alt="" src="'+API+'/logo/wide?v='+L.wide+'">';mk.className='mk w';}
+  else if(L.sq){mk.innerHTML='<img alt="" src="'+API+'/logo/sq?v='+L.sq+'">';mk.className='mk i';}
+  else{mk.textContent=(co.trim().charAt(0)||'·').toUpperCase();mk.className='mk';}
+  cob.textContent=co;
   var a='';
-  if(D.terms) a+='<button class="ib" data-md="terms">'+ic.doc+'<span>Условия аренды</span></button>';
+  if(D.terms||D.about) a+='<button class="ib" data-md="terms">'+ic.doc+'<span>'+(D.terms?'Условия аренды':'О нас')+'</span></button>';
   if(D.address) a+='<button class="ib'+(D.terms?' sq':'')+'" data-md="addr" title="Как нас найти">'+ic.pin+(D.terms?'':'<span>Адрес</span>')+'</button>';
   if(D.phone) a+='<a class="ib sq" href="tel:+'+dig(D.phone)+'" title="Позвонить">'+ic.tel+'</a>';
   var el=document.getElementById('acts'); el.innerHTML=a;
   [].forEach.call(el.querySelectorAll('[data-md]'),function(b){b.onclick=function(){openMd(b.getAttribute('data-md'));};});
   document.title=co+' — автомобили в аренду';}
-function draw(){if(D.look){drawApp();return;}var a=document.getElementById('app');var cars=D.cars||[];var cnt={all:cars.length,free:0,rented:0,booked:0,service:0};cars.forEach(function(c){cnt[c.status]=(cnt[c.status]||0)+1;});
+var APPFAIL=false;
+function draw(){if(!APPFAIL){D.look=Object.assign({tile:'s7',mob:'cm4',view:'tiles',chip:'cur',mode:'light'},D.look||{});drawApp();return;}var a=document.getElementById('app');var cars=D.cars||[];var cnt={all:cars.length,free:0,rented:0,booked:0,service:0};cars.forEach(function(c){cnt[c.status]=(cnt[c.status]||0)+1;});
   head();
   var list=F==='all'?cars:cars.filter(function(c){return c.status===F;});
   var tabs=[['all','Все'],['free','Свободны'],['rented','В аренде'],['booked','Бронь'],['service','Ремонт']].filter(function(x){return x[0]==='all'||cnt[x[0]];}).map(function(x){return '<button class="tab'+(F===x[0]?' on':'')+'" data-f="'+x[0]+'">'+x[1]+'<sup>'+cnt[x[0]]+'</sup></button>';}).join('');
@@ -191,13 +235,13 @@ function appContracts(){var a=[];(D.cars||[]).forEach(function(c){if(c.status===
 function frameDoc(wide){var L=D.look||{};var light=L.mode==='light';var acc=(L.accent?'--accent:'+L.accent+';':'')+(L.accentDim?'--accent-dim:'+L.accentDim+';':'');
   var bc=(wide?'win-mode tl-b ':'')+(L.chip==='cur'?'fx-old ':'')+(L.chip==='f5'?'fx-el':'');
   return '<!doctype html><html lang="ru" class="'+(light?'theme-light':'')+'" style="color-scheme:'+(light?'light':'dark')+';'+acc+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/park-cards.css">'+
-   '<style>html,body{height:auto!important;min-height:0!important;overflow:hidden!important}#app{height:auto!important;min-height:0!important;max-width:none!important;margin:0!important;width:100%!important;display:block!important}main{overflow:visible!important;flex:none!important;zoom:1!important;padding:2px 20px 24px!important}header.top{display:none!important}[data-pk]{cursor:pointer}.chip{cursor:pointer}</style>'+
+   '<style>html,body{height:auto!important;min-height:0!important;overflow:hidden!important}#app{height:auto!important;min-height:0!important;max-width:none!important;margin:0!important;width:100%!important;display:block!important}main{overflow:visible!important;flex:none!important;zoom:1!important;padding:2px 20px 24px!important}header.top{display:none!important}[data-pk]{cursor:pointer}main>.section-title{margin:52px 2px 18px!important}main>.chips{margin-bottom:6px!important}.chip{cursor:pointer}</style>'+
    '<script src="/park-cards.js"><\/script></head><body class="'+bc+'" style="'+acc+'"><div id="app"><main id="main"></main></div></body></html>';}
 function drawApp(){var a=document.getElementById('app');document.body.classList.add('appb');head();document.documentElement.setAttribute('data-m',(D.look&&D.look.mode)==='light'?'light':'dark');
   var wide=isWide();
   if(!FR||FRW!==wide){a.className='appm';a.innerHTML='<iframe id="cf" title="Автопарк" scrolling="no"></iframe>';FR=a.querySelector('#cf');FRW=wide;FR.onload=function(){fillFrame();};FR.srcdoc=frameDoc(wide);return;}
   fillFrame();}
-function fillFrame(){var w=FR&&FR.contentWindow,d=FR&&FR.contentDocument;if(!w||!d||typeof w.carCard!=='function'){setTimeout(fillFrame,120);return;}
+var FRT0=0;function fillFrame(){var w=FR&&FR.contentWindow,d=FR&&FR.contentDocument;if(!w||!d||typeof w.carCard!=='function'){if(!FRT0)FRT0=Date.now();if(Date.now()-FRT0>6000){APPFAIL=true;FR=null;var a=document.getElementById('app');a.className='';draw();return;}setTimeout(fillFrame,120);return;}FRT0=0;
   var L=D.look||{},wide=FRW;
   w.DB={cars:appCars(),contracts:appContracts(),clients:[],clientLedger:[],settings:{currency:'₽',windowsMode:wide,carTileStyle:L.tile||'s7',carMobStyle:L.mob||'cm4',carViewMode:L.view||'default',chipStyle:L.chip||'cur'}};
   var cars=w.DB.cars;var cnt={all:cars.length,free:0,rented:0,booked:0,service:0};cars.forEach(function(c){cnt[c.status]=(cnt[c.status]||0)+1;});
@@ -218,14 +262,14 @@ function fillFrame(){var w=FR&&FR.contentWindow,d=FR&&FR.contentDocument;if(!w||
   try{var bg=w.getComputedStyle(d.body).backgroundColor;if(bg){document.body.style.background=bg;document.documentElement.style.setProperty('--bg',bg);}}catch(e){}
   fit();}
 function fit(){if(!FR||!FR.contentDocument)return;var h=FR.contentDocument.documentElement.scrollHeight;FR.style.height=h+'px';}
-window.addEventListener('resize',function(){if(D&&D.look&&FR&&isWide()!==FRW)drawApp();else fit();});
+window.addEventListener('resize',function(){if(D)head();if(D&&D.look&&FR&&isWide()!==FRW)drawApp();else fit();});
 
 function pl(n,a,b,c){n=Math.abs(n)%100;var m=n%10;if(n>10&&n<20)return c;if(m>1&&m<5)return b;if(m===1)return a;return c;}
 // ---------- полноэкранная галерея ----------
 var LB=null;
 function lbOpen(id){var c=(D.cars||[]).find(function(x){return x.id===id;});if(!c)return;var u=photos(c),n=Math.max(1,u.length),s=ST[c.status]||ST.free,cur=0;
   var el=document.createElement('div');el.className='lb';
-  var slides=u.length?u.map(function(x,i){return '<div class="lb-s"><img alt="" '+(i<2?'src':'data-src')+'="'+x+'"></div>';}).join(''):'<div class="lb-s"><div class="lb-ns">'+ic.car+'Фото пока нет</div></div>';
+  var slides=u.length?u.map(function(x,i){return '<div class="lb-s"><img alt="" '+'src'+'="'+x+'"></div>';}).join(''):'<div class="lb-s"><div class="lb-ns">'+ic.car+'Фото пока нет</div></div>';
   var meta=[c.year?c.year+' г.':'',c.plate||''].filter(Boolean).map(e).join(' · ');
   var links=(D.terms?'<button data-md="terms">'+ic.doc+'Условия аренды</button>':'')+(D.address?'<button data-md="addr">'+ic.pin+'Как нас найти</button>':'');
   el.innerHTML='<div class="lb-g"><div class="lb-hd"><button class="cb" data-x aria-label="Закрыть">'+ic.x+'</button><span class="lb-c">'+(u.length>1?'1 / '+n:'')+'</span></div>'+
@@ -256,17 +300,53 @@ var MD=null;
 function openMd(kind){if(MD)closeMd();var el=document.createElement('div');el.className='md';
   var mapUrl=D.map||(D.address?'https://yandex.ru/maps/?text='+encodeURIComponent(D.address):'');
   var addr=D.address?'<div class="md-sec"'+(kind==='addr'&&D.terms?' id="md-addr"':'')+'><small>Где забрать машину</small><div class="md-a">'+e(D.address)+'</div><a class="md-btn" target="_blank" rel="noopener" href="'+e(mapUrl)+'">'+ic.map+'Открыть на карте</a></div>':'';
-  var body=kind==='terms'&&D.terms?'<div class="md-h"><b>Условия аренды</b><button class="cb" data-x aria-label="Закрыть">'+ic.x+'</button></div><div class="md-t">'+e(D.terms)+'</div>'+addr
-    :'<div class="md-h"><b>Как нас найти</b><button class="cb" data-x aria-label="Закрыть">'+ic.x+'</button></div>'+(D.address?'<div class="md-a">'+e(D.address)+'</div><a class="md-btn" target="_blank" rel="noopener" href="'+e(mapUrl)+'">'+ic.map+'Открыть на карте</a>':'')+(D.phone?'<div class="md-sec"><small>Телефон</small><a class="md-a" style="text-decoration:none" href="tel:+'+dig(D.phone)+'">+'+e(dig(D.phone))+'</a></div>':'');
-  el.innerHTML='<div><div class="hn"></div>'+body+'</div>';
+  var body=kind==='terms'&&(D.terms||D.about)?infoHtml(mapUrl)
+    :findHtml(mapUrl);
+  el.innerHTML='<div class="'+(kind==='terms'?'in':'')+'"><div class="hn"></div>'+body+'</div>';if(kind==='terms')el.classList.add('cen');
+  var cpb=el.querySelector('[data-cp]');if(cpb)cpb.onclick=function(){var s=D.address||'';(navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).then(function(){cpb.classList.add('ok');setTimeout(function(){cpb.classList.remove('ok')},1400)}).catch(function(){});};
   el.onclick=function(ev){if(ev.target===el)closeMd();};el.querySelector('[data-x]').onclick=closeMd;
   MD={el:el,key:function(ev){if(ev.key==='Escape')closeMd();}};document.addEventListener('keydown',MD.key);
   document.body.appendChild(el);document.documentElement.classList.add('lk');requestAnimationFrame(function(){el.classList.add('on');});}
+// «Как нас найти» (вариант 1): карта-картинка с меткой, адрес с копированием, 4 кнопки
+function findHtml(mapUrl){var ad=D.address||'',ph=dig(D.phone),route=ad?'https://yandex.ru/maps/?rtext=~'+encodeURIComponent(ad)+'&rtt=auto':'';
+  var I2=function(p){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';};
+  var nav=I2('<path d="m3 11 19-9-9 19-2-8-8-2z"/>'),cp=I2('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>');
+  return '<div class="md-h"><div><b>Как нас найти</b><div class="fd-s">Пункт выдачи автомобилей</div></div><button class="cb" data-x aria-label="Закрыть">'+ic.x+'</button></div>'+
+   (ad?'<a class="fd-map" target="_blank" rel="noopener" href="'+e(mapUrl)+'"><i class="fd-pin"><b></b></i></a>'+
+   '<div class="fd-ad"><div><div class="fd-at">'+e(ad)+'</div><div class="fd-s">'+e(D.company||'')+'</div></div><button class="fd-cp" data-cp title="Скопировать адрес">'+cp+'</button></div>':'')+
+   '<div class="fd-g">'+(ad?'<a class="fd-b k" target="_blank" rel="noopener" href="'+e(route)+'">'+nav+'Маршрут</a><a class="fd-b" target="_blank" rel="noopener" href="'+e(mapUrl)+'">'+ic.map+'На карте</a>':'')+
+   (ph?'<a class="fd-b" href="tel:+'+ph+'">'+ic.tel+'Позвонить</a><a class="fd-b w" target="_blank" rel="noopener" href="https://wa.me/'+ph+'">'+ic.wa+'WhatsApp</a>':'')+'</div>';}
+// «Условия аренды и о нас»: по центру экрана, условия — списком с галочками
+function infoHtml(mapUrl){var I2=function(p){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';};
+  var ok=I2('<path d="M20 6 9 17l-5-5"/>'),info=I2('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>');
+  var lines=String(D.terms||'').replace(/([.;])\s+(?=[А-ЯA-ZЁ])/g,'$1\n').split('\n').map(function(s){return s.trim().replace(/[.;]$/,'');}).filter(Boolean);
+  var L=D.logo||{},co=D.company||'';
+  var logo=L.sq?'<img alt="" src="'+API+'/logo/sq?v='+L.sq+'">':'<span>'+e((co.trim().charAt(0)||'·').toUpperCase())+'</span>';
+  return '<button class="cb in-x" data-x aria-label="Закрыть">'+ic.x+'</button>'+
+   '<div class="in-hd"><div class="in-lg">'+logo+'</div><b>'+e(co)+'</b><span>'+(D.terms?'Условия аренды':'О компании')+'</span></div>'+
+   (D.about?'<div class="in-sec"><div class="in-t">'+info+'О нас</div><div class="in-ab">'+e(D.about)+'</div></div>':'')+
+   (lines.length?'<div class="in-sec"><div class="in-t">'+ic.doc+'Условия аренды</div><ul class="in-ul">'+lines.map(function(x){return '<li><i>'+ok+'</i><span>'+e(x)+'</span></li>';}).join('')+'</ul></div>':'')+
+   (D.address?'<a class="in-ad" target="_blank" rel="noopener" href="'+e(mapUrl)+'"><i>'+ic.pin+'</i><span><small>Где забрать машину</small><b>'+e(D.address)+'</b></span><em>'+ic.map+'</em></a>':'')+
+   (D.phone?'<div class="in-bt"><a class="fd-b" href="tel:+'+dig(D.phone)+'">'+ic.tel+'Позвонить</a><a class="fd-b w" target="_blank" rel="noopener" href="https://wa.me/'+dig(D.phone)+'">'+ic.wa+'WhatsApp</a></div>':'');}
 function closeMd(){if(!MD)return;var el=MD.el;document.removeEventListener('keydown',MD.key);MD=null;el.classList.remove('on');if(!LB)document.documentElement.classList.remove('lk');setTimeout(function(){el.remove();},220);}
 window.addEventListener('popstate',function(){if(MD)closeMd();lbClose();});
 function fail(){document.getElementById('acts').innerHTML='';document.getElementById('co').textContent='Страница недоступна';
   document.getElementById('app').innerHTML='<div class="err">'+ic.car+'<b>Ссылка недоступна</b>Владелец выключил страницу или выдал новую ссылку.</div>';document.title='Ссылка недоступна';}
-function load(){if(!TOKEN){fail();return;}fetch(API,{cache:'no-store'}).then(function(r){if(r.status===404){D=null;fail();return null;}return r.json();}).then(function(j){if(j&&j.ok){D=j;draw();}}).catch(function(){});}
+// все фото (главные и галерея) загружаются заранее — пока грузятся, показывается экран загрузки
+var PRE={done:{},first:true};
+function allPhotos(d){var a=[];(d.cars||[]).forEach(function(c){photos(c).forEach(function(u){a.push(u);});});var L=d.logo||{};if(L.sq)a.push(API+'/logo/sq?v='+L.sq);if(L.wide)a.push(API+'/logo/wide?v='+L.wide);return a;}
+function preload(urls,cb){var need=urls.filter(function(u){return !PRE.done[u];}),n=need.length,k=0,fin=false;
+  function end(){if(fin)return;fin=true;cb();}
+  if(!n){end();return;}
+  function one(){k++;ldProg(k,n);if(k>=n)end();}
+  need.forEach(function(u){var im=new Image();im.onload=im.onerror=function(){PRE.done[u]=1;one();};im.decoding='async';im.src=u;});
+  setTimeout(end,20000);}
+function ldShow(){if(document.getElementById('ld'))return;var el=document.createElement('div');el.id='ld';el.innerHTML='<div class="ld-c"><div class="ld-r"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19"/><circle class="p" cx="22" cy="22" r="19"/></svg>'+ic.car+'</div><b>Загружаем автопарк</b><span id="ldt">фотографии машин…</span></div>';document.body.appendChild(el);}
+function ldProg(k,n){var p=document.querySelector('#ld .p'),s=document.getElementById('ldt');if(p)p.style.strokeDashoffset=String(119.4*(1-k/n));if(s)s.textContent='фото '+k+' из '+n;}
+function ldHide(){var el=document.getElementById('ld');if(!el)return;el.classList.add('out');setTimeout(function(){el.remove();},350);}
+function load(){if(!TOKEN){fail();return;}if(PRE.first)ldShow();fetch(API,{cache:'no-store'}).then(function(r){if(r.status===404){D=null;ldHide();fail();return null;}return r.json();}).then(function(j){if(!(j&&j.ok))return;
+  if(PRE.first){PRE.first=false;preload(allPhotos(j),function(){D=j;draw();setTimeout(ldHide,250);});}
+  else preload(allPhotos(j),function(){D=j;draw();});}).catch(function(){if(PRE.first){PRE.first=false;ldHide();}});}
 load();setInterval(function(){if(!LB&&!MD)load();},60000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&!LB&&!MD)load();});
 })();

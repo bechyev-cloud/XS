@@ -12,7 +12,7 @@
    работать не будут — приложение покажет ошибку на экране входа. */
 // Основной сервер — в России (relaxdev). Render — резервный: к нему приложение
 // переходит только если включено «Автопереключение» (по умолчанию выключено).
-window.XCAR_APP_VERSION = '4.6.0';
+window.XCAR_APP_VERSION = '4.7.4';
 window.XCAR_DEFAULT_API_BASE = 'https://xss.relaxdev.ru/api';
 window.XCAR_RENDER_API_BASE = 'https://xs-2.onrender.com/api';
 // Прежний адрес по умолчанию: на устройствах, где он был основным, он
@@ -4731,7 +4731,7 @@ html:not(.theme-light) .pk-edm .good{color:#4fd8a8;}
 body.win-mode .sidebar-brand .s.sq-line{font-size:12px;margin-top:2px;}
 body.win-mode .sidebar-brand>div:last-child{min-width:0;}
 body:not(.win-mode) header.top .brand-sub{display:none;}
-header.top .sq-line.m{margin-top:3px;} body.win-mode header.top .sq-line.m{display:none;}
+header.top .sq-line.m{margin-top:3px;} body.win-mode header.top .sq-line.m{display:none !important;}
 header.top .sq-line.m .sq-sig{margin-left:4px;}
 #overlay.side{justify-content:flex-end;align-items:stretch;}
 body.win-mode #overlay.side{padding:0 !important;}
@@ -4768,6 +4768,63 @@ html:not(.theme-light) .sq-st.o{color:#4fd8a8;}
 .sq-ft{display:flex;gap:10px;padding:12px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border);}
 .sq-ft button{flex:1;border:0;padding:13px;border-radius:13px;font-size:14px;font-weight:900;background:var(--surface-2);color:var(--text);cursor:pointer;}
 .sq-ft .m{background:var(--accent);color:#1a1204;} .sq-ft button:disabled{opacity:.5;}
+.pk-bar{display:flex;gap:10px;margin:4px 0 16px;}
+.pk-share{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:18px;border:0;background:var(--accent);color:#1a1204;cursor:pointer;text-align:left;box-shadow:0 10px 24px -12px color-mix(in srgb,var(--accent) 90%,transparent);transition:transform .15s;}
+.pk-share:active{transform:scale(.98);} .pk-share>svg{width:24px;height:24px;flex-shrink:0;}
+.pk-share span{min-width:0;} .pk-share b{display:block;font-size:16.5px;font-weight:900;} .pk-share small{display:block;font-size:12.5px;font-weight:700;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+.pk-share.off{background:var(--surface-2);color:var(--text);box-shadow:none;border:1px dashed color-mix(in srgb,var(--accent) 60%,var(--border));}
+.pk-gear{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:92px;border-radius:18px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:800;cursor:pointer;}
+.pk-gear svg{width:22px;height:22px;color:var(--accent);}
+
+/* строка «Сервер»: мягкая пилюля в цвет темы; зелёный/жёлтый/красный — только у индикатора сети */
+.sq-line{display:inline-flex !important;align-self:flex-start;width:auto !important;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--accent) 18%,transparent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);color:var(--text) !important;font-weight:800 !important;--sq:#16a37f;}
+.sq-line.k-res{--sq:#e39a1e;} .sq-line.k-off{--sq:#d23b2c;} .sq-line.k-none{--sq:#8a919d;}
+html:not(.theme-light) .sq-line{--sq:#4fd8a8;} html:not(.theme-light) .sq-line.k-res{--sq:#f5c056;} html:not(.theme-light) .sq-line.k-off{--sq:#ff7a6b;} html:not(.theme-light) .sq-line.k-none{--sq:#9aa0ad;}
+.sq-line .sq-l{color:var(--text) !important;}
+.sq-line .sq-dot{background:var(--sq) !important;}
+.sq-line .sq-sig b{background:color-mix(in srgb,var(--text) 18%,transparent) !important;} .sq-line .sq-sig b.on{background:var(--sq) !important;}
+.sq-line .sq-ms{color:var(--sq) !important;}
+.sq-line .sq-n{background:var(--sq);color:#fff;}
+.pk-head{gap:12px;flex-wrap:wrap;}
+.pk-ht{min-width:0;flex:1 1 220px;}
+.pk-hr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.pk-hb{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.pk-hbtn{display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 15px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13.5px;font-weight:800;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s;}
+.pk-hbtn:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--border));}
+.pk-hbtn svg{width:17px;height:17px;flex-shrink:0;color:var(--accent);}
+.pk-hbtn.main{background:var(--accent);border-color:var(--accent);color:#1a1204;box-shadow:0 8px 18px -10px color-mix(in srgb,var(--accent) 90%,transparent);} .pk-hbtn.main svg{color:#1a1204;}
+.pk-hbtn.main.off{background:var(--surface-2);color:var(--text);border:1px dashed color-mix(in srgb,var(--accent) 60%,var(--border));box-shadow:none;} .pk-hbtn.main.off svg{color:var(--accent);}
+.pk-hsep{width:1px;height:24px;background:var(--border);margin:0 2px;}
+@media (max-width:700px){ .pk-head{align-items:flex-start;} .pk-hr{width:100%;justify-content:space-between;flex-wrap:nowrap;} .pk-hb{flex-wrap:nowrap;gap:6px;flex:1;min-width:0;} .pk-hbtn{padding:0;width:42px;justify-content:center;} .pk-hbtn span{display:none;} .pk-hbtn.main{flex:1;width:auto;padding:0 12px;} .pk-hbtn.main span{display:inline;} .pk-hsep{display:none;} .pk-head .pk-hr .icon-btn{flex-shrink:0;} }
+.pk-chipsrow{margin:4px 0 10px !important;} .pk .pk-st2{margin:52px 2px 18px !important;} .pk-chipsrow .chips{margin-bottom:0 !important;}
+@media (max-width:700px){ .pk-chipsrow{margin:2px 0 16px !important;} }
+.pkx.pkset{max-width:none;}
+.pkset>.pk-card{border:0 !important;background:none !important;padding:4px 0 0 !important;box-shadow:none !important;}
+@media (min-width:1000px){
+ .pkset>.pk-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:28px;align-items:start;}
+ .pkset>.pk-card>.pk-row1,.pkset>.pk-card>.pk-link,.pkset>.pk-card>.pk-acts1,.pkset>.pk-card>.pk-ed,.pkset>.pk-card>.pk-hint,.pkset>.pk-card>.pk-ask{grid-column:1;}
+ .pkset>.pk-card>.pk-sets{grid-column:2;grid-row:1 / span 6;margin-top:0;}
+}
+.pkl{max-width:980px;}
+.pkl-g{display:grid;grid-template-columns:1fr 1.6fr;gap:16px;}
+@media (max-width:700px){ .pkl-g{grid-template-columns:1fr;} }
+.pkl-c{border:1px solid var(--border);border-radius:18px;padding:14px;background:var(--surface);}
+.pkl-h b{display:block;font-size:15px;font-weight:900;} .pkl-h span{display:block;font-size:12px;color:var(--text-faint);font-weight:600;margin-top:2px;}
+.pkl-drop{position:relative;margin-top:12px;display:flex;align-items:center;justify-content:center;border-radius:14px;border:2px dashed color-mix(in srgb,var(--accent) 55%,var(--border));cursor:pointer;overflow:hidden;
+ background-color:var(--surface-2);background-image:linear-gradient(45deg,color-mix(in srgb,var(--text) 5%,transparent) 25%,transparent 25%,transparent 75%,color-mix(in srgb,var(--text) 5%,transparent) 75%),linear-gradient(45deg,color-mix(in srgb,var(--text) 5%,transparent) 25%,transparent 25%,transparent 75%,color-mix(in srgb,var(--text) 5%,transparent) 75%);background-size:16px 16px;background-position:0 0,8px 8px;}
+.pkl-drop.sq{width:min(100%,200px);height:200px;margin-left:auto;margin-right:auto;} .pkl-drop.wide{height:200px;} @media (max-width:700px){ .pkl-drop.wide{height:auto;aspect-ratio:3/1;} }
+.pkl-drop img{max-width:88%;max-height:88%;object-fit:contain;} .pkl-drop input{display:none;}
+.pkl-ph{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:10px;color:var(--text);} .pkl-ph svg{width:28px;height:28px;color:var(--accent);} .pkl-ph b{font-size:14px;font-weight:900;} .pkl-ph small{font-size:11px;color:var(--text-faint);font-weight:700;}
+.pkl-sp{width:28px;height:28px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--accent);animation:pkspin .8s linear infinite;}
+.pkl-a{display:flex;gap:8px;margin-top:10px;justify-content:center;} .pkl-a .pk-b2{height:38px;}
+.pkl-ph2{margin:22px 2px 10px;font-size:12px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--text-faint);}
+.pkl-pvs{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:14px;} @media (max-width:700px){ .pkl-pvs{grid-template-columns:1fr;} }
+.pkl-pv small{display:block;text-align:center;font-size:11.5px;color:var(--text-faint);font-weight:700;margin-top:6px;}
+.pkl-bar{display:flex;align-items:center;gap:10px;height:62px;padding:0 14px;border-radius:16px;background:#fff;border:1px solid #eceef1;color:#111;}
+.pkl-bar b{font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .pkl-sp2{flex:1;}
+.pkl-bar i{width:30px;height:30px;border-radius:50%;border:1px solid #e6e8ec;flex-shrink:0;}
+.pkl-l{width:36px;height:36px;border-radius:11px;background:#111;color:#fff;display:grid;place-items:center;font-weight:800;flex-shrink:0;}
+.pkl-si{width:36px;height:36px;border-radius:11px;object-fit:cover;flex-shrink:0;} .pkl-wi{height:38px;max-width:60%;object-fit:contain;}
 </style>
 </head>
 <body>
@@ -8340,25 +8397,61 @@ function pkCleanCard(h){
 }
 function pkCarsWrap(){ if(DB.settings.windowsMode) return (DB.settings.carViewMode||'default')==='list' ? 'cars-list-wrap' : 'pk-appgrid w'; const st = DB.settings.carMobStyle || 'cm4'; return st==='cm4' ? 'cmd-grid' : st==='cm3' ? 'cmc-wrap' : 'pk-appgrid m'; }
 
+/* ---- логотип для клиентов: квадратный и широкий (показываются на странице по ссылке) ---- */
+const PK_LOGO = { sq:{ t:'Квадратный', s:'для телефона и значка — лучше 512×512', w:512, h:512 }, wide:{ t:'Широкий', s:'для компьютера и планшета — например 1200×300', w:1200, h:400 } };
+function pkLogoUrl(kind){ const l = ((__pk.st && __pk.st.logo) || {})[kind]; if(!l) return ''; if(!__pk.lg) __pk.lg = {}; const k = kind+':'+l.h; if(__pk.lg[k] && __pk.lg[k]!=='ld') return __pk.lg[k]; if(!__pk.lg[k]){ __pk.lg[k] = 'ld';
+  fetch(apiBase()+'/park/logo/'+kind+'?v='+l.h, { headers:{ Authorization:'Bearer '+authGetToken() } }).then(r=>r.ok?r.blob():null).then(b=>{ if(b){ __pk.lg[k] = URL.createObjectURL(b); pkRender(); } }).catch(()=>{}); } return ''; }
+function pkLogoPrep(file, kind){ return new Promise((res, rej)=>{ const fr = new FileReader(); fr.onerror = rej; fr.onload = ()=>{ const im = new Image(); im.onerror = ()=>rej(new Error('Не удалось открыть картинку')); im.onload = ()=>{
+  const M = PK_LOGO[kind], k = Math.min(1, M.w/im.width, M.h/im.height); const cv = document.createElement('canvas'); cv.width = Math.max(1,Math.round(im.width*k)); cv.height = Math.max(1,Math.round(im.height*k));
+  cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); const png = /png|svg|webp|gif/i.test(file.type); res(cv.toDataURL(png ? 'image/png' : 'image/jpeg', 0.9)); }; im.src = fr.result; }; fr.readAsDataURL(file); }); }
+async function pkLogoUp(inp, kind){
+  const f = inp.files && inp.files[0]; inp.value = ''; if(!f) return;
+  __pk.lgBusy = kind; pkRender();
+  try{ const data = await pkLogoPrep(f, kind); const r = await apiFetch('/park/logo/'+kind, { method:'POST', body: JSON.stringify({ data }) }); __pk.st.logo = r.logo; showToast('Логотип загружен — клиенты увидят его по ссылке'); }
+  catch(e){ showToast(e.message || 'Не удалось загрузить логотип'); }
+  __pk.lgBusy = null; pkRender();
+}
+async function pkLogoDel(kind){ try{ const r = await apiFetch('/park/logo/'+kind, { method:'DELETE' }); __pk.st.logo = r.logo; }catch(e){ showToast(e.message||'Ошибка'); } pkRender(); }
+function pkLogoHtml(){
+  const company = DB.settings.companyName || 'Автопрокат';
+  const box = kind=>{ const M = PK_LOGO[kind], u = pkLogoUrl(kind), has = !!((__pk.st && __pk.st.logo) || {})[kind];
+    return `<div class="pkl-c"><div class="pkl-h"><b>${M.t}</b><span>${M.s}</span></div>
+      <label class="pkl-drop ${kind}">${__pk.lgBusy===kind ? '<i class="pkl-sp"></i>' : has ? (u?`<img src="${u}" alt="">`:'<i class="pkl-sp"></i>') : `<span class="pkl-ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg><b>Загрузить</b><small>PNG с прозрачным фоном — лучше всего</small></span>`}<input type="file" accept="image/png,image/jpeg,image/webp" onchange="pkLogoUp(this,'${kind}')"></label>
+      ${has ? `<div class="pkl-a"><label class="pk-b2">Заменить<input type="file" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="pkLogoUp(this,'${kind}')"></label><button class="pk-b2" onclick="pkLogoDel('${kind}')">Убрать</button></div>` : ''}</div>`; };
+  const su = pkLogoUrl('sq'), wu = pkLogoUrl('wide');
+  const prevW = `<div class="pkl-pv w"><div class="pkl-bar">${wu ? `<img src="${wu}" alt="" class="pkl-wi">` : su ? `<img src="${su}" alt="" class="pkl-si"><b>${esc(company)}</b>` : `<span class="pkl-l">${esc(company.charAt(0).toUpperCase())}</span><b>${esc(company)}</b>`}<span class="pkl-sp2"></span><i></i><i></i><i></i></div><small>Компьютер и планшет</small></div>`;
+  const prevM = `<div class="pkl-pv m"><div class="pkl-bar">${su ? `<img src="${su}" alt="" class="pkl-si"><b>${esc(company)}</b>` : wu ? `<img src="${wu}" alt="" class="pkl-wi">` : `<span class="pkl-l">${esc(company.charAt(0).toUpperCase())}</span><b>${esc(company)}</b>`}<span class="pkl-sp2"></span><i></i><i></i></div><small>Телефон</small></div>`;
+  return `<div class="pk">${pkSubHead('Логотип для клиентов','Показывается в шапке страницы по ссылке','set')}<div class="sheet-body pkx pkl">
+    <div class="pkl-g">${box('sq')}${box('wide')}</div>
+    <div class="pkl-ph2">Так увидят клиенты</div><div class="pkl-pvs">${prevW}${prevM}</div>
+    <div class="pkx-hint">Широкий логотип показывается на компьютере и планшете вместо названия компании, квадратный — на телефоне рядом с названием. Если загружен только один, он используется везде.</div></div></div>`;
+}
+
 /* ---- условия аренды и местоположение (страница для клиентов) ---- */
 const PK_TERMS_SAMPLE = 'Возраст водителя — от 23 лет, стаж от 3 лет.\nДокументы: паспорт и водительское удостоверение.\nЗалог — 10 000 ₽, возвращается при сдаче машины.\nМашина выдаётся с полным баком — так же и возвращается.\nПробег — до 300 км в сутки.\nКурение в салоне запрещено.\nОплата: наличные или перевод.';
 function pkView(v){ __pk.view = v; __pk.draft = null; pkRender(); const sh = document.getElementById('sheet'); const b = sh && sh.querySelector('.sheet-body'); if(b) b.scrollTop = 0; if(sh) sh.scrollTop = 0; }
-function pkSaveTerms(){ const v = (document.getElementById('pkTerms')||{}).value || ''; pkOpt('terms', v.trim()); __pk.view = null; showToast(v.trim() ? 'Условия аренды сохранены' : 'Условия аренды убраны'); }
+function pkSaveTerms(){ const v = (document.getElementById('pkTerms')||{}).value || ''; pkOpt('terms', v.trim()); __pk.view = 'set'; showToast(v.trim() ? 'Условия аренды сохранены' : 'Условия аренды убраны'); }
 function pkSaveAddr(){ const a = ((document.getElementById('pkAddr')||{}).value||'').trim(), m = ((document.getElementById('pkMap')||{}).value||'').trim();
   if(m && !/^https?:\/\//i.test(m)){ showToast('Ссылка на карту должна начинаться с https://'); return; }
-  const o = Object.assign({}, (__pk.st && __pk.st.opts) || {}, { address:a, map:m }); if(__pk.st) __pk.st.opts = o; __pk.view = null; pkSave({ opts:o }); showToast(a ? 'Адрес сохранён' : 'Адрес убран'); }
-function pkSubHead(title, sub){ return `<div class="sheet-handle"></div><div class="sheet-head"><div style="display:flex;align-items:center;gap:10px;min-width:0"><button class="icon-btn" onclick="pkView(null)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div style="min-width:0"><div class="sheet-title">${title}</div><div class="pk-sub">${sub}</div></div></div><button class="icon-btn" onclick="closeSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`; }
+  const o = Object.assign({}, (__pk.st && __pk.st.opts) || {}, { address:a, map:m }); if(__pk.st) __pk.st.opts = o; __pk.view = 'set'; pkSave({ opts:o }); showToast(a ? 'Адрес сохранён' : 'Адрес убран'); }
+function pkSubHead(title, sub, back){ return `<div class="sheet-handle"></div><div class="sheet-head"><div style="display:flex;align-items:center;gap:10px;min-width:0"><button class="icon-btn" onclick="pkView(${back?"'"+back+"'":'null'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><div style="min-width:0"><div class="sheet-title">${title}</div><div class="pk-sub">${sub}</div></div></div><button class="icon-btn" onclick="closeSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`; }
+function pkSaveAbout(){ const v = ((document.getElementById('pkAbout')||{}).value||'').trim(); pkOpt('about', v); __pk.view = 'set'; showToast(v ? 'Текст «О нас» сохранён' : 'Текст «О нас» убран'); }
+function pkAboutHtml(){ const o = (__pk.st && __pk.st.opts) || {};
+  return `<div class="pk">${pkSubHead('О нас','Клиенты увидят это в окне «Условия аренды»','set')}<div class="sheet-body pkx">
+    <textarea id="pkAbout" class="pkx-ta" style="min-height:200px" placeholder="Например: Аренда автомобилей с 2018 года. Все машины ухоженные, проходят ТО вовремя. Подача по городу бесплатно." maxlength="3000">${esc(o.about||'')}</textarea>
+    <div class="pkx-row"><span>Коротко о компании: сколько лет работаете, чем отличаетесь</span></div>
+    <div class="pkx-bt"><button class="pk-b2" onclick="pkView('set')">Отмена</button><button class="pk-b2 main" onclick="pkSaveAbout()">Сохранить</button></div></div></div>`; }
 function pkTermsHtml(){ const o = (__pk.st && __pk.st.opts) || {};
-  return `<div class="pk">${pkSubHead('Условия аренды','Клиенты увидят их по кнопке «Условия аренды»')}<div class="sheet-body pkx">
+  return `<div class="pk">${pkSubHead('Условия аренды','Клиенты увидят их по кнопке «Условия аренды»','set')}<div class="sheet-body pkx">
     <textarea id="pkTerms" class="pkx-ta" placeholder="Например: возраст от 23 лет, залог 10 000 ₽, пробег до 300 км в сутки…" maxlength="5000">${esc(o.terms||'')}</textarea>
     <div class="pkx-row"><button class="pkx-link" onclick="document.getElementById('pkTerms').value=PK_TERMS_SAMPLE">Вставить пример</button><span>Каждое условие — с новой строки</span></div>
-    <div class="pkx-bt"><button class="pk-b2" onclick="pkView(null)">Отмена</button><button class="pk-b2 main" onclick="pkSaveTerms()">Сохранить</button></div></div></div>`; }
+    <div class="pkx-bt"><button class="pk-b2" onclick="pkView('set')">Отмена</button><button class="pk-b2 main" onclick="pkSaveTerms()">Сохранить</button></div></div></div>`; }
 function pkAddrHtml(){ const o = (__pk.st && __pk.st.opts) || {};
-  return `<div class="pk">${pkSubHead('Местоположение','Где клиент забирает машину')}<div class="sheet-body pkx">
+  return `<div class="pk">${pkSubHead('Местоположение','Где клиент забирает машину','set')}<div class="sheet-body pkx">
     <label class="pkx-f"><span>Адрес</span><input id="pkAddr" maxlength="300" placeholder="г. Грозный, ул. Примерная, 10" value="${escapeAttr(o.address||'')}"></label>
     <label class="pkx-f"><span>Ссылка на карту <i>по желанию</i></span><input id="pkMap" maxlength="600" placeholder="https://yandex.ru/maps/…" value="${escapeAttr(o.map||'')}"></label>
     <div class="pkx-hint">Если ссылку не указать, кнопка «Открыть на карте» найдёт адрес в Яндекс Картах.</div>
-    <div class="pkx-bt"><button class="pk-b2" onclick="pkView(null)">Отмена</button><button class="pk-b2 main" onclick="pkSaveAddr()">Сохранить</button></div></div></div>`; }
+    <div class="pkx-bt"><button class="pk-b2" onclick="pkView('set')">Отмена</button><button class="pk-b2 main" onclick="pkSaveAddr()">Сохранить</button></div></div></div>`; }
 /* ---- аренда на 6 часов для каждой машины ---- */
 function pkCarOpt(id){ return ((__pk.st && __pk.st.cars) || {})[id] || {}; }
 function pkH6(id, on){ if(!__pk.st) return; __pk.st.cars = __pk.st.cars || {}; __pk.st.cars[id] = Object.assign({}, pkCarOpt(id), { h6: !!on }); pkSave({ car:{ id, h6: !!on } }); }
@@ -8701,7 +8794,7 @@ function pkHtml(){
     car:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h1a2 2 0 1 0 4 0h4a2 2 0 1 0 4 0h1a1 1 0 0 0 1-1v-3a2 2 0 0 0-.4-1.2l-2.1-2.8a2 2 0 0 0-1.6-.8H6a1 1 0 0 0-1 .8L4.2 12A2 2 0 0 0 4 12.8V16a1 1 0 0 0 1 1z"/></svg>',
   };
   ic.cam = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
-  if(__pk.view==='terms') return pkTermsHtml(); if(__pk.view==='addr') return pkAddrHtml();
+  if(__pk.view==='terms') return pkTermsHtml(); if(__pk.view==='logo') return pkLogoHtml(); if(__pk.view==='about') return pkAboutHtml(); if(__pk.view==='addr') return pkAddrHtml();
   if(__pk.car) return pkCarHtml(ic);
   const url = pkUrl(); const V = __pk.v || 'v1';
   const host = pkOrigin().replace(/^https?:\/\//,'') + '/park/';
@@ -8734,6 +8827,8 @@ function pkHtml(){
     ${sw('plate','Госномер','номер машины на карточке', !!opts.plate)}
     <div class="pk-set ph"><div><b>Телефон для связи</b><span>кнопки «Позвонить» и «WhatsApp»</span></div><input type="tel" placeholder="+7 900 000-00-00" value="${escapeAttr(opts.phone||'')}" ${s?'':'disabled'} oninput="pkPhone(this.value)" onclick="event.stopPropagation()"></div>
     <div class="pk-set nav" onclick="${s?"pkView('terms')":''}"><div><b>Условия аренды</b><span>${opts.terms ? esc(String(opts.terms).split('\n')[0].slice(0,60))+(String(opts.terms).length>60||String(opts.terms).indexOf('\n')>=0?'…':'') : 'не указаны — клиенты не увидят кнопку'}</span></div><em>${opts.terms?'Изменить':'Добавить'}</em>${ic.chev}</div>
+    <div class="pk-set nav" onclick="${s?"pkView('about')":''}"><div><b>О нас</b><span>${opts.about ? esc(String(opts.about).split('\n')[0].slice(0,60))+(String(opts.about).length>60?'…':'') : 'не указано — пара слов о компании для клиентов'}</span></div><em>${opts.about?'Изменить':'Добавить'}</em>${ic.chev}</div>
+    <div class="pk-set nav" onclick="${s?"pkView('logo')":''}"><div><b>Логотип для клиентов</b><span>${(()=>{ const L=(s&&s.logo)||{}; return L.sq&&L.wide?'квадратный и широкий':L.sq?'квадратный':L.wide?'широкий':'не загружен — показывается первая буква названия'; })()}</span></div><em>${s&&s.logo&&(s.logo.sq||s.logo.wide)?'Изменить':'Загрузить'}</em>${ic.chev}</div>
     <div class="pk-set nav" onclick="${s?"pkView('addr')":''}"><div><b>Местоположение</b><span>${opts.address ? esc(opts.address) : 'не указано'}</span></div><em>${opts.address?'Изменить':'Добавить'}</em>${ic.chev}</div>`;
   const pill = (k, label, val)=> `<button class="pk-pill ${val?'on':''}" ${s?'':'disabled'} onclick="pkOpt('${k}',${!val})">${val?'✓ ':''}${label}</button>`;
   const head = `<div class="pk-row1"><div class="pk-lic ${on?'on':''}">${ic.link}</div><div class="pk-lt"><b>Ссылка для клиентов</b><span>${on ? '<i class="pk-dot"></i>Включена · видно '+shown+' '+plural(shown,'машина','машины','машин') : 'Выключена — страница недоступна'}</span></div>${pkSwitch(on, 'pkToggleLink(this.checked)', __pk.busy)}</div>`;
@@ -8748,6 +8843,14 @@ function pkHtml(){
       ${name && !__pk.edit ? `<div class="pk-acts1"><button class="pk-b2 main big" ${on?'':'disabled'} onclick="pkShare()">${ic.share}<span>Поделиться ссылкой</span></button><div class="pk-mw"><button class="pk-b2 sq ${__pk.menu?'on':''}" onclick="event.stopPropagation();pkMenu(!__pk.menu)">${ic.more}</button>${menu}</div></div>` : ''}
       ${regenAsk}
       <div class="pk-sets">${setList}</div></div>`;
+    // главный экран «Статус»: широкая кнопка «Поделиться» и рядом «Настройки» (открывают всё это на весь экран)
+    if(__pk.view==='set') return `<div class="pk">${pkSubHead('Настройки ссылки','Адрес, что видят клиенты, условия аренды, телефон, местоположение')}<div class="sheet-body pkx pkset">${link}</div></div>`;
+    // кнопки в строке заголовка рядом с «✕»: Поделиться · Настройки · Показать все · Скрыть все
+    link = `<div class="pk-hb">
+      <button class="pk-hbtn main ${on && name?'':'off'}" onclick="${on && name ? 'pkShare()' : "pkView('set')"}" title="${on && name ? esc(host)+esc(name) : 'Включить ссылку для клиентов'}">${ic.share}<span>${on && name ? 'Поделиться' : 'Включить ссылку'}</span></button>
+      <button class="pk-hbtn" onclick="pkView('set')" title="Настройки ссылки">${ic.gear}<span>Настройки</span></button>
+      ${logged && s ? `<span class="pk-hsep"></span><button class="pk-hbtn" onclick="pkAll(true)" title="Показать клиентам все машины">${ic.eye}<span>Показать все</span></button><button class="pk-hbtn" onclick="pkAll(false)" title="Скрыть от клиентов все машины">${ic.eyeOff}<span>Скрыть все</span></button>` : ''}
+    </div>`;
   } else if(V==='v2'){
     // B · две карточки рядом: «Ссылка» и «Что видят клиенты», иконки-кнопки
     link = `<div class="pk-two"><div class="pk-card v2">${head}
@@ -8786,14 +8889,14 @@ function pkHtml(){
   const company = DB.settings.companyName || 'Автопрокат';
   return `<div class="pk">
     <div class="sheet-handle"></div>
-    <div class="sheet-head"><div><div class="sheet-title">Статус автопарка</div><div class="pk-sub">Ваша страница и то, что видят клиенты по ссылке</div></div>
-      <button class="icon-btn" onclick="closeSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="sheet-head pk-head"><div class="pk-ht"><div class="sheet-title">Статус автопарка</div><div class="pk-sub">Ваша страница и то, что видят клиенты по ссылке</div></div>
+      <div class="pk-hr">${String(link).indexOf('pk-hb')>=0 ? link : ''}<button class="icon-btn" onclick="closeSheet()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div>
     <div class="sheet-body">
-      ${link}
+      ${String(link).indexOf('pk-hb')>=0 ? '' : link}
       <div class="pk-view">
-        <div class="pk-vh"><div class="pk-vlg">${esc(company.trim().charAt(0).toUpperCase()||'X')}</div><div class="pk-vt"><b>${esc(company)}</b><span><i class="pk-dot"></i>Наличие автомобилей · так видят клиенты</span></div></div>
         <div class="pk-chipsrow">${chipsRow([['all','Все'],['free','Свободны'],['rented','В аренде'],['booked','Забронированы'],['service','Ремонт']], cntA, F, '__pk.f').replace(/render\(\)/g,'pkRender()')}</div>
-        <div class="pk-tiprow">${logged && s ? `<div class="pk-sha"><button onclick="pkAll(true)">Показать все</button><button onclick="pkAll(false)">Скрыть все</button></div>` : ''}<div class="pk-tip">${logged && s ? `Клиенты видят ${shown} из ${DB.cars.length} · нажмите на машину, чтобы добавить фото · «глаз» — скрыть или показать${opts.phone?' · клиенты по нажатию листают все фото машины':''}` : 'Все машины автопарка'}</div></div>
+        <div class="section-title pk-st2">Автопарк <span class="count">${list.length}</span></div>
+        
         ${list.length ? `<div class="${pkCarsWrap()}">${tiles}</div>` : DB.cars.length ? `<div class="pk-tip" style="text-align:center;padding:30px 0">В этой категории сейчас пусто</div>` : emptyState('Пока нет машин','Добавьте машины в автопарк — они появятся здесь')}
       </div>
     </div></div>`;
