@@ -52,6 +52,7 @@ router.post('/request', requestLimiter, async (req, res) => {
   const cfg = await readConfig();
   const plan = getPlanById(cfg, planId);
   if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
+  if (plan.priceTbd) return res.status(400).json({ error: 'Цена этого тарифа ещё уточняется — оформить его пока нельзя' });
 
   const m = Number(months) || 1;
   if (!ALLOWED_MONTHS.includes(m)) {
@@ -71,6 +72,7 @@ router.get('/payment', async (req, res) => {
   const cfg = await readConfig();
   const plan = getPlanById(cfg, req.query.planId);
   if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
+  if (plan.priceTbd) return res.status(400).json({ error: 'Цена этого тарифа ещё уточняется — оформить его пока нельзя' });
   const m = Number(req.query.months) || 1;
   if (!ALLOWED_MONTHS.includes(m)) return res.status(400).json({ error: 'Срок подписки должен быть 1, 3, 6 или 12 месяцев' });
   res.json({ plan, months: m, amount: computeTariffAmount(plan.price, m, cfg.discounts), payment: cfg.payment });
@@ -81,6 +83,7 @@ router.post('/pay', requestLimiter, async (req, res) => {
   const cfg = await readConfig();
   const plan = getPlanById(cfg, b.planId);
   if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
+  if (plan.priceTbd) return res.status(400).json({ error: 'Цена этого тарифа ещё уточняется — оформить его пока нельзя' });
   const m = Number(b.months) || 1;
   if (!ALLOWED_MONTHS.includes(m)) return res.status(400).json({ error: 'Срок подписки должен быть 1, 3, 6 или 12 месяцев' });
   const { user } = await getSelfUser(req);
@@ -116,6 +119,7 @@ router.post('/activate-free', requestLimiter, async (req, res) => {
   const cfg = await readConfig();
   const plan = getPlanById(cfg, planId);
   if (!plan) return res.status(400).json({ error: 'Неизвестный тариф' });
+  if (plan.priceTbd) return res.status(400).json({ error: 'Цена этого тарифа ещё уточняется — оформить его пока нельзя' });
   if (plan.price !== 0) return res.status(400).json({ error: 'Этот тариф не бесплатный' });
 
   const { usersData, user } = await getSelfUser(req);

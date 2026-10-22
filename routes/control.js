@@ -574,7 +574,8 @@ router.put('/subscriptions', perm('subscriptions.edit'), wrap(async (req, res) =
     const id = String(p.id || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || ('plan' + Math.random().toString(36).slice(2, 6));
     if (ids.has(id)) throw bad('Повторяющийся код тарифа: ' + id); ids.add(id);
     if (!String(p.name || '').trim()) throw bad('У каждого тарифа должно быть название');
-    return { id, name: String(p.name).trim().slice(0, 40), price: Math.max(0, Math.round(Number(p.price) || 0)), carLimit: Math.max(0, Math.round(Number(p.carLimit) || 0)) };
+    const price = Math.max(0, Math.round(Number(p.price) || 0));
+    return Object.assign({ id, name: String(p.name).trim().slice(0, 40), price, carLimit: Math.max(0, Math.round(Number(p.carLimit) || 0)) }, p.priceTbd && !(price > 0) ? { priceTbd: true } : {});
   });
   const td = Math.round(Number(b.trialDays)); if (!(td >= 0 && td <= 365)) throw bad('Бесплатный период — от 0 до 365 дней');
   const discounts = {}; [1, 3, 6, 12].forEach((m) => { const v = Number((b.discounts || {})[m]); discounts[m] = Number.isFinite(v) ? Math.min(0.9, Math.max(0, v)) : 0; });
@@ -936,6 +937,8 @@ router.delete('/admins/:id', perm('admins.manage'), wrap(async (req, res) => {
   await rbac.revokeAllForAdmin(req.params.id);
   await audit.log(req, 'Удалил администратора', { type: 'admin', id: req.params.id }); res.json({ ok: true });
 }));
+// Сквозное шифрование: состояние для панели (ключ сервера, сессии, счётчики)
+router.get('/e2e', wrap(async (req, res) => { res.json(require('../lib/e2e').status()); }));
 router.get('/settings', wrap(async (req, res) => {
   const s = await ctlSettings.get();
   res.json({ general: s.general, notifications: s.notifications, quickReplies: s.quickReplies, backup: s.backup, servers: s.servers, app: s.app, version: monitor.VERSION });

@@ -1,0 +1,273 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0e10" media="(prefers-color-scheme: dark)">
+<title>Автомобили в аренду</title>
+<style>
+:root{--bg:#fafaf9;--card:#fff;--tx:#111214;--sub:#5f646c;--dim:#8f949c;--line:#ececea;--soft:#f3f3f1;--acc:#f2a93b;--grn:#13a06a;--org:#d08a12;--vio:#7c5ce0;--gry:#8f949c;--red:#e0483a;--sh:0 1px 2px rgba(17,18,20,.04),0 8px 24px -12px rgba(17,18,20,.10);--r:20px}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0e10;--card:#16181c;--tx:#f4f4f5;--sub:#b3b8c0;--dim:#80868f;--line:#24272d;--soft:#1d2025;--grn:#3fd39b;--org:#f2b54a;--vio:#a991ff;--sh:0 1px 2px rgba(0,0,0,.4)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit}
+a{color:inherit}
+.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px)}
+.top>div{max-width:1440px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 20px 12px;display:flex;align-items:center;gap:12px}
+.mk{width:38px;height:38px;border-radius:11px;background:var(--tx);color:var(--bg);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0;letter-spacing:-.5px}
+.co{flex:1;min-width:0}.co b{display:block;font-size:17px;font-weight:750;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.co span{display:block;font-size:12.5px;color:var(--dim);margin-top:1px}
+.acts{display:flex;gap:8px}
+.ib{height:40px;min-width:40px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:650;cursor:pointer;text-decoration:none;transition:background .15s}
+.ib:hover{background:var(--soft)}.ib svg{width:18px;height:18px;flex-shrink:0}.ib span{display:none}
+@media(min-width:720px){.ib span{display:inline}.ib{padding:0 15px}}
+.ib.sq{padding:0;width:40px}
+main{max-width:1440px;margin:0 auto;padding:6px 20px calc(40px + env(safe-area-inset-bottom))}
+.lead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:10px 0 4px}
+.lead h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.6px}
+@media(min-width:720px){.lead h1{font-size:32px}}
+.lead p{margin:0;font-size:13px;color:var(--dim);white-space:nowrap}
+.now{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;color:var(--sub);font-weight:600;margin-bottom:14px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--c,var(--grn));flex-shrink:0}
+.now .dot{box-shadow:0 0 0 4px color-mix(in srgb,var(--grn) 18%,transparent)}
+.tabs{display:flex;gap:22px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:18px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:10px 0 12px;border:0;background:none;font-size:14.5px;font-weight:600;color:var(--dim);cursor:pointer;position:relative;display:flex;align-items:center;gap:6px}
+.tab sup{font-size:11px;font-weight:700;color:var(--dim);top:0}
+.tab.on{color:var(--tx)}.tab.on:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:var(--tx)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 12px}
+@media(min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 18px}}
+@media(min-width:1024px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:1440px){.grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.car{cursor:pointer;display:flex;flex-direction:column;min-width:0}
+.ph{position:relative;aspect-ratio:4/3;border-radius:var(--r);overflow:hidden;background:var(--soft)}
+.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+@media(hover:hover){.car:hover .ph img{transform:scale(1.04)}}
+.car.busy .ph img{filter:saturate(.55) brightness(.96)}
+.ns{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim)}.ns svg{width:40px;height:40px;opacity:.6}
+.st{position:absolute;left:10px;top:10px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.92);color:#16181c;font-size:11.5px;font-weight:700;backdrop-filter:blur(6px)}
+.pc{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:999px;background:rgba(10,11,13,.5);color:#fff;font-size:11.5px;font-weight:650;backdrop-filter:blur(6px)}.pc svg{width:13px;height:13px}
+.bd{padding:10px 2px 0}
+.nm{font-size:15px;font-weight:650;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt{font-size:12.5px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr{margin-top:6px;font-size:16.5px;font-weight:800;letter-spacing:-.3px}.pr small{font-size:12.5px;font-weight:500;color:var(--dim);letter-spacing:0}
+.un{margin-top:3px;font-size:12px;font-weight:600;color:var(--c)}
+.empty{padding:80px 20px;text-align:center;color:var(--dim)}.empty b{display:block;font-size:19px;color:var(--tx);margin-bottom:6px}
+.ft{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;font-size:12.5px;color:var(--dim)}
+.ft a{text-decoration:none;color:var(--sub);font-weight:600}
+.sk{aspect-ratio:4/3;border-radius:var(--r);background:linear-gradient(90deg,var(--soft),var(--line),var(--soft));background-size:200% 100%;animation:sk 1.2s infinite}@keyframes sk{to{background-position:-200% 0}}
+/* ---------- галерея ---------- */
+html.lk,html.lk body{overflow:hidden}
+.lb{position:fixed;inset:0;z-index:50;background:#000;display:flex;flex-direction:column;opacity:0;transition:opacity .22s}.lb.on{opacity:1}
+.lb-g{position:relative;flex:1;min-height:0}
+.lb-tr{position:absolute;inset:0;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior:contain}.lb-tr::-webkit-scrollbar{display:none}
+.lb-s{flex:0 0 100%;height:100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center}
+.lb-s img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
+.lb-ns{color:#777;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:14px}.lb-ns svg{width:60px;height:60px}
+.lb-hd{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 14px 30px;background:linear-gradient(rgba(0,0,0,.5),transparent);pointer-events:none}
+.lb-hd>*{pointer-events:auto}
+.cb{width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px)}.cb svg{width:20px;height:20px}
+.lb-c{color:#fff;font-size:13px;font-weight:650;letter-spacing:.3px;opacity:.9}
+.lb-dots{position:absolute;left:0;right:0;bottom:14px;z-index:2;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.lb-dots i{width:6px;height:6px;border-radius:9px;background:rgba(255,255,255,.4);transition:all .25s}.lb-dots i.on{width:20px;background:#fff}
+.lb-n{position:absolute;top:50%;z-index:2;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);transition:background .15s}
+.lb-n:hover{background:rgba(255,255,255,.26)}.lb-n svg{width:22px;height:22px}.lb-n.p{left:18px}.lb-n.n{right:18px}
+@media(hover:hover){.lb-n{display:flex}}
+.lb-th{display:none}
+.lb-i{background:var(--card);color:var(--tx);border-radius:24px 24px 0 0;padding:18px 20px calc(18px + env(safe-area-inset-bottom));flex-shrink:0}
+.lb-i h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.4px;line-height:1.2}
+.lb-m{font-size:13px;color:var(--dim);margin-top:3px}
+.lb-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px}
+.lb-p b{font-size:24px;font-weight:800;letter-spacing:-.5px}.lb-p small{font-size:13px;color:var(--dim);font-weight:500}
+.lb-p em{display:block;font-style:normal;font-size:13px;color:var(--sub);font-weight:600;margin-top:2px}
+.lb-s2{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:650;color:var(--c);white-space:nowrap}
+.lb-b{display:flex;gap:10px;margin-top:16px}
+.bw{flex:1;height:52px;border-radius:16px;border:0;background:var(--tx);color:var(--bg);display:flex;align-items:center;justify-content:center;gap:9px;font-size:15.5px;font-weight:700;text-decoration:none;cursor:pointer}
+.bw svg{width:20px;height:20px}
+.bc{width:52px;height:52px;border-radius:16px;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}.bc svg{width:20px;height:20px}
+.lb-l{display:flex;gap:18px;margin-top:14px}.lb-l button{border:0;background:none;padding:0;font-size:13.5px;font-weight:650;color:var(--sub);cursor:pointer;display:inline-flex;align-items:center;gap:6px}.lb-l svg{width:16px;height:16px}
+@media(min-width:900px){
+ .lb{flex-direction:row;background:#08090a}
+ .lb-g{display:flex;flex-direction:column}
+ .lb-tr{position:relative;inset:auto;flex:1}
+ .lb-s{padding:64px 84px 10px}
+ .lb-dots{display:none}
+ .lb-th{display:flex;gap:8px;justify-content:center;padding:12px 20px 22px;overflow-x:auto;scrollbar-width:none}
+ .lb-th button{flex:0 0 auto;width:76px;height:54px;border-radius:10px;overflow:hidden;border:0;padding:0;opacity:.45;cursor:pointer;outline:2px solid transparent;outline-offset:2px;transition:opacity .15s}
+ .lb-th button.on{opacity:1;outline-color:#fff}.lb-th img{width:100%;height:100%;object-fit:cover;display:block}
+ .lb-i{width:400px;border-radius:0;display:flex;flex-direction:column;justify-content:center;padding:44px 36px}
+ .lb-i h2{font-size:28px}.lb-p b{font-size:30px}
+ .lb-hd{padding:20px 22px 40px}
+}
+@media(max-width:899px) and (orientation:landscape) and (max-height:520px){.lb{flex-direction:row}.lb-i{width:320px;border-radius:0;overflow:auto;padding:16px 18px}.lb-dots{bottom:8px}}
+/* ---------- условия / адрес ---------- */
+.md{position:fixed;inset:0;z-index:60;background:rgba(10,11,13,.45);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s;backdrop-filter:blur(3px)}
+.md.on{opacity:1}
+.md>div{width:100%;max-width:560px;max-height:86vh;max-height:86dvh;overflow:auto;background:var(--card);border-radius:24px 24px 0 0;padding:8px 22px calc(22px + env(safe-area-inset-bottom));transform:translateY(20px);transition:transform .25s}
+.md.on>div{transform:none}
+@media(min-width:720px){.md{align-items:center}.md>div{border-radius:24px;padding:22px 28px 26px}}
+.md .hn{width:40px;height:5px;border-radius:9px;background:var(--line);margin:4px auto 14px}
+@media(min-width:720px){.md .hn{display:none}}
+.md-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.md-h b{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.md-h .cb{background:var(--soft);color:var(--tx)}
+.md-t{font-size:15px;line-height:1.65;color:var(--sub);white-space:pre-wrap;word-wrap:break-word}
+.md-sec{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.md-sec small{display:block;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.md-a{font-size:16px;font-weight:650;line-height:1.45}
+.md-btn{margin-top:12px;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--card);display:inline-flex;align-items:center;gap:8px;padding:0 16px;font-size:14px;font-weight:650;text-decoration:none;cursor:pointer}.md-btn svg{width:18px;height:18px}
+.err{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--dim)}
+.err b{font-size:21px;color:var(--tx);margin:16px 0 6px;letter-spacing:-.3px}.err svg{width:52px;height:52px;opacity:.5}
+:root[data-m=light]{--bg:#fafaf9;--card:#fff;--tx:#111214;--sub:#5f646c;--dim:#8f949c;--line:#ececea;--soft:#f3f3f1;--grn:#13a06a;--org:#d08a12;--vio:#7c5ce0}
+:root[data-m=dark]{--bg:#0d0e10;--card:#16181c;--tx:#f4f4f5;--sub:#b3b8c0;--dim:#80868f;--line:#24272d;--soft:#1d2025;--grn:#3fd39b;--org:#f2b54a;--vio:#a991ff}
+body.appb .top>div{max-width:none}
+main.appm{max-width:none;padding:0 0 calc(20px + env(safe-area-inset-bottom))}
+main.appm iframe{display:block;width:100%;border:0;height:600px;background:transparent}
+</style></head><body>
+<header class="top"><div><div class="mk" id="mk">·</div><div class="co"><b id="co">&nbsp;</b><span>Автомобили в аренду</span></div><div class="acts" id="acts"></div></div></header>
+<main id="app"><div class="lead"><h1>&nbsp;</h1></div><div class="grid"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div></main>
+<script>
+(function(){
+var TOKEN="__TOKEN__", D=null, F='all';
+var API='/api/public/park/'+encodeURIComponent(TOKEN);
+var ST={free:['Свободна','var(--grn)'],rented:['В аренде','var(--org)'],booked:['Бронь','var(--vio)'],service:['Ремонт','var(--gry)']};
+function I(p){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';}
+var ic={
+ car:I('<path d="M5 17h1a2 2 0 1 0 4 0h4a2 2 0 1 0 4 0h1a1 1 0 0 0 1-1v-3a2 2 0 0 0-.4-1.2l-2.1-2.8a2 2 0 0 0-1.6-.8H6a1 1 0 0 0-1 .8L4.2 12A2 2 0 0 0 4 12.8V16a1 1 0 0 0 1 1z"/>'),
+ cam:I('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'),
+ x:I('<path d="M18 6 6 18M6 6l12 12"/>'), l:I('<path d="m15 18-6-6 6-6"/>'), r:I('<path d="m9 18 6-6-6-6"/>'),
+ doc:I('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>'),
+ pin:I('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>'),
+ tel:I('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>'),
+ map:I('<path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4z"/><path d="M8 2v16M16 6v16"/>'),
+ wa:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.7-1.2s.2-1.1.2-1.2-.2-.2-.4-.3z"/></svg>'
+};
+function e(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function money(n){return Math.round(n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' ₽';}
+function p2(x){return String(x).padStart(2,'0');}
+function dt(v){var d=new Date(v);if(isNaN(d))return '';return p2(d.getDate())+'.'+p2(d.getMonth()+1)+', '+p2(d.getHours())+':'+p2(d.getMinutes());}
+function dig(p){return String(p||'').replace(/\D/g,'');}
+function photos(c){var a=[];if(c.photo)a.push(API+'/photo/'+encodeURIComponent(c.id)+'?v='+c.photo);(c.gallery||[]).forEach(function(id){a.push(API+'/g/'+encodeURIComponent(c.id)+'/'+encodeURIComponent(id));});return a;}
+function until(c){var now=Date.now();
+  if(c.status==='free') return c.bookedFrom?'свободна до '+dt(c.bookedFrom):'';
+  if(c.status==='rented') return c.until&&Date.parse(c.until)>now?'освободится '+dt(c.until):'';
+  if(c.status==='booked') return c.from?'бронь с '+dt(c.from):'';
+  return '';}
+function longSt(c){if(c.status==='free')return c.bookedFrom?'Свободна до '+dt(c.bookedFrom):'Свободна сейчас';if(c.status==='rented')return c.until&&Date.parse(c.until)>Date.now()?'Освободится '+dt(c.until):'Сейчас в аренде';if(c.status==='booked')return c.from?'Бронь с '+dt(c.from):'Забронирована';return 'На обслуживании';}
+function waText(c){var n=c.make+' '+c.model+(c.year?' ('+c.year+')':'');var p=c.rate?', '+money(c.rate).replace(/ /g,' ')+' в сутки':'';
+  if(c.status==='free') return 'Здравствуйте! Хочу арендовать '+n+p+'. Машина свободна?';
+  if(c.status==='rented') return 'Здравствуйте! Интересует '+n+p+'. Когда освободится?';
+  if(c.status==='booked') return 'Здравствуйте! Интересует '+n+p+'. Когда будет свободна?';
+  return 'Здравствуйте! Интересует '+n+'. Когда будет доступна?';}
+function card(c){var s=ST[c.status]||ST.free;var u=photos(c);
+  var meta=[c.year||'',c.plate||'',c.rate6h?'6 ч — '+money(c.rate6h):''].filter(Boolean).map(e).join(' · ');
+  var un=until(c);
+  return '<div class="car'+(c.status==='free'?'':' busy')+'" data-id="'+e(c.id)+'"><div class="ph">'+(u.length?'<img loading="lazy" alt="" src="'+u[0]+'">':'<div class="ns">'+ic.car+'</div>')+
+    '<span class="st"><i class="dot" style="--c:'+s[1]+'"></i>'+s[0]+'</span>'+(u.length>1?'<span class="pc">'+ic.cam+u.length+'</span>':'')+'</div>'+
+    '<div class="bd"><div class="nm">'+e(c.make+' '+c.model)+'</div>'+(meta?'<div class="mt">'+meta+'</div>':'')+
+    (c.rate?'<div class="pr">'+money(c.rate)+' <small>/ сутки</small></div>':'')+(un?'<div class="un" style="--c:'+s[1]+'">'+e(un)+'</div>':'')+'</div></div>';}
+function head(){
+  var co=D.company||'Автопрокат'; document.getElementById('co').textContent=co; document.getElementById('mk').textContent=(co.trim().charAt(0)||'·').toUpperCase();
+  var a='';
+  if(D.terms) a+='<button class="ib" data-md="terms">'+ic.doc+'<span>Условия аренды</span></button>';
+  if(D.address) a+='<button class="ib'+(D.terms?' sq':'')+'" data-md="addr" title="Как нас найти">'+ic.pin+(D.terms?'':'<span>Адрес</span>')+'</button>';
+  if(D.phone) a+='<a class="ib sq" href="tel:+'+dig(D.phone)+'" title="Позвонить">'+ic.tel+'</a>';
+  var el=document.getElementById('acts'); el.innerHTML=a;
+  [].forEach.call(el.querySelectorAll('[data-md]'),function(b){b.onclick=function(){openMd(b.getAttribute('data-md'));};});
+  document.title=co+' — автомобили в аренду';}
+function draw(){if(D.look){drawApp();return;}var a=document.getElementById('app');var cars=D.cars||[];var cnt={all:cars.length,free:0,rented:0,booked:0,service:0};cars.forEach(function(c){cnt[c.status]=(cnt[c.status]||0)+1;});
+  head();
+  var list=F==='all'?cars:cars.filter(function(c){return c.status===F;});
+  var tabs=[['all','Все'],['free','Свободны'],['rented','В аренде'],['booked','Бронь'],['service','Ремонт']].filter(function(x){return x[0]==='all'||cnt[x[0]];}).map(function(x){return '<button class="tab'+(F===x[0]?' on':'')+'" data-f="'+x[0]+'">'+x[1]+'<sup>'+cnt[x[0]]+'</sup></button>';}).join('');
+  var d=new Date(D.now||Date.now());
+  a.innerHTML='<div class="lead"><h1>Автопарк</h1><p>обновлено в '+p2(d.getHours())+':'+p2(d.getMinutes())+'</p></div>'+
+    '<div class="now"><i class="dot"></i>'+(cnt.free?cnt.free+' '+pl(cnt.free,'машина свободна','машины свободны','машин свободно')+' сейчас':'Сейчас все машины заняты')+'</div>'+
+    '<div class="tabs">'+tabs+'</div>'+(list.length?'<div class="grid">'+list.map(card).join('')+'</div>':'<div class="empty"><b>Здесь пока пусто</b>В этой категории сейчас нет машин</div>')+
+    '<div class="ft"><span>'+(D.address?e(D.address):'&nbsp;')+'</span><span>Работает на XCAR</span></div>';
+  [].forEach.call(a.querySelectorAll('.tab'),function(el){el.onclick=function(){F=el.getAttribute('data-f');draw();};});
+  [].forEach.call(a.querySelectorAll('.car'),function(el){el.onclick=function(){lbOpen(el.getAttribute('data-id'));};});}
+// ---------- вид «как в приложении»: карточки рисует код и стили самого приложения (park-cards.js/css) ----------
+var FR=null, FRW=null;
+function isWide(){var w=window.innerWidth,h=window.innerHeight;return w>=1200||(w>=900&&w>h&&h>=500);}
+function appCars(){return (D.cars||[]).map(function(c){return {id:c.id,make:c.make,model:c.model,year:c.year,plate:c.plate||'',rate:c.rate||0,rate6h:c.rate6h||0,status:c.status,photo:c.photo?API+'/photo/'+encodeURIComponent(c.id)+'?v='+c.photo:''};});}
+function appContracts(){var a=[];(D.cars||[]).forEach(function(c){if(c.status==='rented'&&c.until){var end=c.until,st=c.since||new Date(Date.parse(end)-864e5).toISOString();a.push({id:'k'+c.id,carId:c.id,status:'active',type:'rental',start:st,end:end,rentalType:c.h6?'6h':'day',rate:c.rate||0,total:c.rate||0});}});return a;}
+function frameDoc(wide){var L=D.look||{};var light=L.mode==='light';var acc=(L.accent?'--accent:'+L.accent+';':'')+(L.accentDim?'--accent-dim:'+L.accentDim+';':'');
+  var bc=(wide?'win-mode tl-b ':'')+(L.chip==='cur'?'fx-old ':'')+(L.chip==='f5'?'fx-el':'');
+  return '<!doctype html><html lang="ru" class="'+(light?'theme-light':'')+'" style="color-scheme:'+(light?'light':'dark')+';'+acc+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/park-cards.css">'+
+   '<style>html,body{height:auto!important;min-height:0!important;overflow:hidden!important}#app{height:auto!important;min-height:0!important;max-width:none!important;margin:0!important;width:100%!important;display:block!important}main{overflow:visible!important;flex:none!important;zoom:1!important;padding:2px 20px 24px!important}header.top{display:none!important}[data-pk]{cursor:pointer}.chip{cursor:pointer}</style>'+
+   '<script src="/park-cards.js"><\/script></head><body class="'+bc+'" style="'+acc+'"><div id="app"><main id="main"></main></div></body></html>';}
+function drawApp(){var a=document.getElementById('app');document.body.classList.add('appb');head();document.documentElement.setAttribute('data-m',(D.look&&D.look.mode)==='light'?'light':'dark');
+  var wide=isWide();
+  if(!FR||FRW!==wide){a.className='appm';a.innerHTML='<iframe id="cf" title="Автопарк" scrolling="no"></iframe>';FR=a.querySelector('#cf');FRW=wide;FR.onload=function(){fillFrame();};FR.srcdoc=frameDoc(wide);return;}
+  fillFrame();}
+function fillFrame(){var w=FR&&FR.contentWindow,d=FR&&FR.contentDocument;if(!w||!d||typeof w.carCard!=='function'){setTimeout(fillFrame,120);return;}
+  var L=D.look||{},wide=FRW;
+  w.DB={cars:appCars(),contracts:appContracts(),clients:[],clientLedger:[],settings:{currency:'₽',windowsMode:wide,carTileStyle:L.tile||'s7',carMobStyle:L.mob||'cm4',carViewMode:L.view||'default',chipStyle:L.chip||'cur'}};
+  var cars=w.DB.cars;var cnt={all:cars.length,free:0,rented:0,booked:0,service:0};cars.forEach(function(c){cnt[c.status]=(cnt[c.status]||0)+1;});
+  var list=F==='all'?cars:cars.filter(function(c){return c.status===F;});
+  var chips=w.chipsRow([['all','Все'],['free','Свободны'],['rented','В аренде'],['booked','Забронированы'],['service','Ремонт']],cnt,F,'__F').replace(/onclick="__F='(\w+)';render\(\)"/g,'data-f="$1"');
+  var vm=L.view||'default',mob=L.mob||'cm4';
+  var one=function(c){return wide?w.carCard(c,vm):(mob!=='cur'?w.carCardMob(mob,c):w.carCard(c,'default'));};
+  var wrap=wide?(vm==='list'?'cars-list-wrap':''):(mob==='cm4'?'cmd-grid':mob==='cm3'?'cmc-wrap':'');
+  var m=d.getElementById('main');
+  var cardsHtml=list.map(function(c){return one(c).trim();}).join('');
+  m.innerHTML=chips+'<div class="section-title">Автопарк <span class="count">'+list.length+'</span></div>'+(list.length?(wrap?'<div class="'+wrap+'">'+cardsHtml+'</div>':cardsHtml):'<div class="empty"><div class="empty-title">Здесь пока пусто</div><div class="empty-sub">В этой категории сейчас нет машин</div></div>');
+  // карточки: убираем кнопки действий владельца, помечаем машину
+  var roots=wrap?(m.querySelector('.'+wrap)||m).children:[].filter.call(m.children,function(x){return !x.classList.contains('chips')&&!x.classList.contains('section-title')&&!x.classList.contains('empty');});
+  [].forEach.call(roots,function(el,i){var c=list[i];if(!c)return;el.removeAttribute('onclick');el.setAttribute('data-pk',c.id);[].forEach.call(el.querySelectorAll('[onclick],button,input,select,textarea'),function(x){x.remove();});});
+  [].forEach.call(m.querySelectorAll('[onclick]'),function(x){x.removeAttribute('onclick');});
+  if(!d.__pkBound){d.__pkBound=1;d.addEventListener('click',function(ev){var f=ev.target.closest&&ev.target.closest('[data-f]');if(f){F=f.getAttribute('data-f');fillFrame();return;}var k=ev.target.closest&&ev.target.closest('[data-pk]');if(k)lbOpen(k.getAttribute('data-pk'));});
+    try{new ResizeObserver(fit).observe(d.body);}catch(e){} d.addEventListener('load',fit,true);}
+  try{var bg=w.getComputedStyle(d.body).backgroundColor;if(bg){document.body.style.background=bg;document.documentElement.style.setProperty('--bg',bg);}}catch(e){}
+  fit();}
+function fit(){if(!FR||!FR.contentDocument)return;var h=FR.contentDocument.documentElement.scrollHeight;FR.style.height=h+'px';}
+window.addEventListener('resize',function(){if(D&&D.look&&FR&&isWide()!==FRW)drawApp();else fit();});
+
+function pl(n,a,b,c){n=Math.abs(n)%100;var m=n%10;if(n>10&&n<20)return c;if(m>1&&m<5)return b;if(m===1)return a;return c;}
+// ---------- полноэкранная галерея ----------
+var LB=null;
+function lbOpen(id){var c=(D.cars||[]).find(function(x){return x.id===id;});if(!c)return;var u=photos(c),n=Math.max(1,u.length),s=ST[c.status]||ST.free,cur=0;
+  var el=document.createElement('div');el.className='lb';
+  var slides=u.length?u.map(function(x,i){return '<div class="lb-s"><img alt="" '+(i<2?'src':'data-src')+'="'+x+'"></div>';}).join(''):'<div class="lb-s"><div class="lb-ns">'+ic.car+'Фото пока нет</div></div>';
+  var meta=[c.year?c.year+' г.':'',c.plate||''].filter(Boolean).map(e).join(' · ');
+  var links=(D.terms?'<button data-md="terms">'+ic.doc+'Условия аренды</button>':'')+(D.address?'<button data-md="addr">'+ic.pin+'Как нас найти</button>':'');
+  el.innerHTML='<div class="lb-g"><div class="lb-hd"><button class="cb" data-x aria-label="Закрыть">'+ic.x+'</button><span class="lb-c">'+(u.length>1?'1 / '+n:'')+'</span></div>'+
+    '<div class="lb-tr">'+slides+'</div>'+(u.length>1?'<button class="lb-n p" aria-label="Назад">'+ic.l+'</button><button class="lb-n n" aria-label="Вперёд">'+ic.r+'</button><div class="lb-dots">'+u.map(function(x,i){return '<i class="'+(i?'':'on')+'"></i>';}).join('')+'</div>':'')+
+    (u.length>1?'<div class="lb-th">'+u.map(function(x,i){return '<button data-i="'+i+'" class="'+(i?'':'on')+'"><img alt="" loading="lazy" src="'+x+'"></button>';}).join('')+'</div>':'')+'</div>'+
+    '<div class="lb-i"><h2>'+e(c.make+' '+c.model)+'</h2>'+(meta?'<div class="lb-m">'+meta+'</div>':'')+
+    '<div class="lb-row"><div class="lb-p">'+(c.rate?'<b>'+money(c.rate)+'</b> <small>/ сутки</small>'+(c.rate6h?'<em>6 часов — '+money(c.rate6h)+'</em>':''):'')+'</div><span class="lb-s2" style="--c:'+s[1]+'"><i class="dot"></i>'+e(longSt(c))+'</span></div>'+
+    (D.phone?'<div class="lb-b"><a class="bw" target="_blank" rel="noopener" href="https://wa.me/'+dig(D.phone)+'?text='+encodeURIComponent(waText(c))+'">'+ic.wa+(c.status==='free'?'Забронировать':'Написать')+'</a><a class="bc" href="tel:+'+dig(D.phone)+'" aria-label="Позвонить">'+ic.tel+'</a></div>':'')+
+    (links?'<div class="lb-l">'+links+'</div>':'')+'</div>';
+  document.body.appendChild(el);document.documentElement.classList.add('lk');
+  var tr=el.querySelector('.lb-tr'),cn=el.querySelector('.lb-c');
+  function load(i){var s=tr.children[i];var im=s&&s.querySelector('img[data-src]');if(im){im.src=im.getAttribute('data-src');im.removeAttribute('data-src');}}
+  function go(i,sm){i=Math.max(0,Math.min(n-1,i));tr.scrollTo({left:i*tr.clientWidth,behavior:sm===false?'auto':'smooth'});}
+  function upd(){cur=Math.round(tr.scrollLeft/Math.max(1,tr.clientWidth));if(u.length>1)cn.textContent=(cur+1)+' / '+n;load(cur);load(cur+1);load(cur-1);
+    [].forEach.call(el.querySelectorAll('.lb-dots i'),function(d,k){d.classList.toggle('on',k===cur);});
+    [].forEach.call(el.querySelectorAll('.lb-th button'),function(b,k){b.classList.toggle('on',k===cur);});}
+  var t0;tr.addEventListener('scroll',function(){clearTimeout(t0);t0=setTimeout(upd,50);});
+  [].forEach.call(el.querySelectorAll('.lb-th button'),function(b){b.onclick=function(){go(+b.getAttribute('data-i'));};});
+  var pb=el.querySelector('.lb-n.p'),nb=el.querySelector('.lb-n.n');if(pb)pb.onclick=function(){go(cur-1);};if(nb)nb.onclick=function(){go(cur+1);};
+  el.querySelector('[data-x]').onclick=function(){history.back();};
+  [].forEach.call(el.querySelectorAll('.lb-l [data-md]'),function(b){b.onclick=function(){openMd(b.getAttribute('data-md'));};});
+  LB={el:el,key:function(ev){if(document.querySelector('.md'))return;if(ev.key==='Escape')history.back();if(ev.key==='ArrowLeft')go(cur-1);if(ev.key==='ArrowRight')go(cur+1);},rs:function(){go(cur,false);}};
+  document.addEventListener('keydown',LB.key);window.addEventListener('resize',LB.rs);
+  history.pushState({lb:1},'');requestAnimationFrame(function(){el.classList.add('on');});}
+function lbClose(){if(!LB)return;var el=LB.el;document.removeEventListener('keydown',LB.key);window.removeEventListener('resize',LB.rs);LB=null;el.classList.remove('on');document.documentElement.classList.remove('lk');setTimeout(function(){el.remove();},230);}
+// ---------- условия аренды / адрес ----------
+var MD=null;
+function openMd(kind){if(MD)closeMd();var el=document.createElement('div');el.className='md';
+  var mapUrl=D.map||(D.address?'https://yandex.ru/maps/?text='+encodeURIComponent(D.address):'');
+  var addr=D.address?'<div class="md-sec"'+(kind==='addr'&&D.terms?' id="md-addr"':'')+'><small>Где забрать машину</small><div class="md-a">'+e(D.address)+'</div><a class="md-btn" target="_blank" rel="noopener" href="'+e(mapUrl)+'">'+ic.map+'Открыть на карте</a></div>':'';
+  var body=kind==='terms'&&D.terms?'<div class="md-h"><b>Условия аренды</b><button class="cb" data-x aria-label="Закрыть">'+ic.x+'</button></div><div class="md-t">'+e(D.terms)+'</div>'+addr
+    :'<div class="md-h"><b>Как нас найти</b><button class="cb" data-x aria-label="Закрыть">'+ic.x+'</button></div>'+(D.address?'<div class="md-a">'+e(D.address)+'</div><a class="md-btn" target="_blank" rel="noopener" href="'+e(mapUrl)+'">'+ic.map+'Открыть на карте</a>':'')+(D.phone?'<div class="md-sec"><small>Телефон</small><a class="md-a" style="text-decoration:none" href="tel:+'+dig(D.phone)+'">+'+e(dig(D.phone))+'</a></div>':'');
+  el.innerHTML='<div><div class="hn"></div>'+body+'</div>';
+  el.onclick=function(ev){if(ev.target===el)closeMd();};el.querySelector('[data-x]').onclick=closeMd;
+  MD={el:el,key:function(ev){if(ev.key==='Escape')closeMd();}};document.addEventListener('keydown',MD.key);
+  document.body.appendChild(el);document.documentElement.classList.add('lk');requestAnimationFrame(function(){el.classList.add('on');});}
+function closeMd(){if(!MD)return;var el=MD.el;document.removeEventListener('keydown',MD.key);MD=null;el.classList.remove('on');if(!LB)document.documentElement.classList.remove('lk');setTimeout(function(){el.remove();},220);}
+window.addEventListener('popstate',function(){if(MD)closeMd();lbClose();});
+function fail(){document.getElementById('acts').innerHTML='';document.getElementById('co').textContent='Страница недоступна';
+  document.getElementById('app').innerHTML='<div class="err">'+ic.car+'<b>Ссылка недоступна</b>Владелец выключил страницу или выдал новую ссылку.</div>';document.title='Ссылка недоступна';}
+function load(){if(!TOKEN){fail();return;}fetch(API,{cache:'no-store'}).then(function(r){if(r.status===404){D=null;fail();return null;}return r.json();}).then(function(j){if(j&&j.ok){D=j;draw();}}).catch(function(){});}
+load();setInterval(function(){if(!LB&&!MD)load();},60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&!LB&&!MD)load();});
+})();
+</script></body></html>

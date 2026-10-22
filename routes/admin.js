@@ -349,7 +349,8 @@ router.put('/settings', async (req, res) => {
       id: String(p.id),
       name: String(p.name).trim(),
       carLimit: Math.max(0, Math.round(Number(p.carLimit))),
-      price: Math.max(0, Math.round(Number(p.price)))
+      price: Math.max(0, Math.round(Number(p.price))),
+      ...(p.priceTbd && !(Number(p.price) > 0) ? { priceTbd: true } : {})
     })),
     trialDays: Math.round(td),
     payment: {

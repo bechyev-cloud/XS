@@ -10,11 +10,32 @@ const tgAccess = require('../lib/control/tgaccess');
 
 const router = express.Router();
 router.use(authMiddleware);
+// Доступ к разделу «Пользователи XCAR»: только если пользователь сам делится базой, прошло
+// N часов после включения (XCAR CONTROL → Настройки → Application) и подписка активна.
+//   state: open | off (не делится) | wait (ждёт, availableAt) | sub (подписка истекла)
+async function xcarAccess(uid) {
+  let app = {}; try { app = (await require('../lib/control/settings').get()).app || {}; } catch (e) {}
+  const delayH = Number.isFinite(Number(app.xcarDelayHours)) ? Number(app.xcarDelayHours) : 24;
+  const st = share.status(uid);
+  const base = { delayHours: delayH, now: new Date().toISOString() };
+  if (app.xcarNeedSub !== false) {
+    try {
+      const u = await require('../lib/store').getUserLite(uid); const cfg = await require('../lib/config').readConfig();
+      const sub = require('../lib/subscription').publicSubscription(u && u.subscription, cfg);
+      if (sub.status === 'expired') return Object.assign(base, { state: 'sub' });
+    } catch (e) {}
+  }
+  if (!st.enabled) return Object.assign(base, { state: 'off' });
+  const t = st.enabledAt ? Date.parse(st.enabledAt) : 0; // старые участники (без даты) — уже открыто
+  const at = t ? t + delayH * 3600000 : 0;
+  if (at > Date.now()) return Object.assign(base, { state: 'wait', availableAt: new Date(at).toISOString(), enabledAt: st.enabledAt });
+  return Object.assign(base, { state: 'open' });
+}
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false, message: { error: 'Слишком много запросов. Подождите минуту.' } });
 
 router.get('/stats', async (req, res) => {
   const bi = await blacklist.info();
-  res.json({ xcar: share.stats(req.userId), telegram: { files: bi.files.length, total: bi.total, updatedAt: bi.updatedAt }, share: share.status(req.userId), tgAccess: await tgAccess.get(req.userId) });
+  res.json({ xcar: share.stats(req.userId), telegram: { files: bi.files.length, total: bi.total, updatedAt: bi.updatedAt }, share: share.status(req.userId), tgAccess: await tgAccess.get(req.userId), xcarAccess: await xcarAccess(req.userId) });
 });
 router.get('/search', limiter, async (req, res) => {
   const q = String(req.query.q || '').trim().slice(0, 200);
@@ -23,7 +44,8 @@ router.get('/search', limiter, async (req, res) => {
   if (q.length < 2 && !hashes.length) return res.json({ xcar: [], telegram: [] });
   const out = { xcar: [], telegram: [] };
   // базы других пользователей доступны только тем, кто сам делится базой онлайн
-  out.xcarLocked = !share.status(req.userId).enabled;
+  const acc = await xcarAccess(req.userId); out.xcarAccess = acc;
+  out.xcarLocked = acc.state !== 'open';
   // чёрные списки других прокатов видны всем; полные базы — только тем, кто сам делится
   if (src === 'all' || src === 'xcar') out.xcar = share.search(q, hashes, req.userId, { blOnly: out.xcarLocked });
   out.tgLocked = !(await tgAccess.approved(req.userId));
@@ -37,7 +59,7 @@ router.get('/search', limiter, async (req, res) => {
 // просмотр источника целиком (без поиска): xcar — клиенты других прокатов, telegram — чёрный список
 router.get('/browse', limiter, async (req, res) => {
   const src = String(req.query.src || 'xcar');
-  const locked = !share.status(req.userId).enabled;
+  const acc = await xcarAccess(req.userId); const locked = acc.state !== 'open';
   if (src === 'telegram') {
     if (!(await tgAccess.approved(req.userId))) return res.json({ telegram: [], tgLocked: true, tgAccess: await tgAccess.get(req.userId) });
     const bi = await blacklist.info(); const names = {}; bi.files.forEach((f) => { names[f.id] = f.name; });
@@ -49,7 +71,7 @@ router.get('/browse', limiter, async (req, res) => {
     }
     return res.json({ telegram: out, tgUpdatedAt: bi.updatedAt });
   }
-  res.json({ xcar: share.list(req.userId, { blOnly: locked }), xcarLocked: locked });
+  res.json({ xcar: locked ? [] : share.list(req.userId, {}), xcarLocked: locked, xcarAccess: acc });
 });
 // заявка на доступ к базе Telegram
 router.get('/tg-access', async (req, res) => { res.json(await tgAccess.get(req.userId)); });

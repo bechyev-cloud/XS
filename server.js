@@ -39,10 +39,15 @@ app.use(monitor.middleware);
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 // Лимит побольше стандартного: в данных бывают фото машин / документов в base64.
 app.use(express.json({ limit: '130mb' }));
+// Сквозное шифрование: рукопожатие + расшифровка запросов / шифрование ответов (lib/e2e.js)
+const e2e = require('./lib/e2e');
+app.post('/api/e2e/hello', e2e.hello);
+app.get('/api/e2e/info', (req, res) => { const s = e2e.status(); res.json({ ok: true, fingerprint: s.fingerprint, alg: s.alg }); });
+app.use(e2e.middleware);
 
 app.get('/api/health', async (req, res) => {
   // app — настройки пользовательского приложения из панели (например, скрыть раздел «Серверы»)
-  let appCfg = { hideServerSettings: false };
+  let appCfg = { hideServerSettings: false, e2eForce: false };
   try { appCfg = (await require('./lib/control/settings').get()).app; } catch (e) { /* по умолчанию */ }
   res.json({ ok: true, app: appCfg, name: 'xcar-server', time: new Date().toISOString(), version: monitor.VERSION, uptime: Math.round((Date.now() - monitor.STARTED) / 1000) });
 });
@@ -106,6 +111,11 @@ app.use('/api/support', supportRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/check', checkRoutes);
 app.use('/api/control', control.router);
+// «Статус автопарка»: ссылка для клиентов (Машины → Статус в приложении)
+const parkRoutes = require('./routes/park');
+app.use('/api/park', parkRoutes.owner);
+app.use('/api/public', parkRoutes.pub);
+app.use('/', parkRoutes.html);
 
 // Супер-админ панель — отдаётся прямо этим сервером, без отдельного хостинга.
 // Откройте https://ваш-сервер/admin в браузере.
