@@ -1,5 +1,6 @@
 /* Сгенерировано tools/gen_park_cards.py из index.html — не править вручную. Функции карточек машин для страницы клиентов. */
 const FX_I = {
+  service:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/>',
   all:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',
   free:'<path d="M20 6 9 17l-5-5"/>',
   rented:'<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
@@ -31,7 +32,7 @@ const FX_I = {
   xcar:'<path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>',
   tg:'<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/>',
 };
-const FX_C = { all:'var(--accent)', week:'#3d8bfd', month:'#8b5cf6', year:'#0ea5e9', custom:'#64748b', globe:'#3d8bfd', home:'#22c08a', refresh:'#64748b', dash:'#3d8bfd', reports:'#8b5cf6', income:'#22c08a', repair:'#f97316', pm:'#3d8bfd', group:'#22c08a', news:'#f59e0b', support:'#8b5cf6', mine:'#22c08a', xcar:'#3d8bfd', tg:'#0ea5e9', free:'#22c08a', rented:'#3d8bfd', booked:'#8b5cf6', service:'#f97316', active:'#22c08a', debt:'#ef4444', fines:'#f59e0b', blacklist:'#64748b', oldDebt:'#e11d48', oil:'#0ea5e9', violations:'#dc2626' };
+const FX_C = { service:'#e39a1e', all:'var(--accent)', week:'#3d8bfd', month:'#8b5cf6', year:'#0ea5e9', custom:'#64748b', globe:'#3d8bfd', home:'#22c08a', refresh:'#64748b', dash:'#3d8bfd', reports:'#8b5cf6', income:'#22c08a', repair:'#f97316', pm:'#3d8bfd', group:'#22c08a', news:'#f59e0b', support:'#8b5cf6', mine:'#22c08a', xcar:'#3d8bfd', tg:'#0ea5e9', free:'#22c08a', rented:'#3d8bfd', booked:'#8b5cf6', service:'#f97316', active:'#22c08a', debt:'#ef4444', fines:'#f59e0b', blacklist:'#64748b', oldDebt:'#e11d48', oil:'#0ea5e9', violations:'#dc2626' };
 function ctvProg(ct){ if(ct.status==='done') return 1; if(ct.status==='booked' || ct.status==='cancelled') return 0; const s = +new Date(ct.start), e = +new Date(ct.end); if(!(e>s)) return 0; return Math.max(0, Math.min(1, (Date.now()-s)/(e-s))); }
 const TI = {
   cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>',

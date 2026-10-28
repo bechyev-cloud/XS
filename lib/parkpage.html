@@ -120,6 +120,18 @@ html.lk,html.lk body{overflow:hidden}
 body.appb .top>div{max-width:none}
 main.appm{max-width:none;padding:0 0 calc(20px + env(safe-area-inset-bottom))}
 main.appm iframe{display:block;width:100%;border:0;height:600px;background:transparent}
+.pft{max-width:1440px;margin:8px auto 0;padding:22px 20px calc(36px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line);color:var(--dim);font-size:13px;font-weight:600}
+.pft b{color:var(--tx);font-size:14px}.pft .pfa{display:flex;gap:8px;flex-wrap:wrap}.pft .ib span{display:inline}
+.ib.tl{background:var(--acc);border-color:transparent;color:#fff}.ib.wa{background:#1fae5b;border-color:transparent;color:#fff}.ib.tl:hover,.ib.wa:hover{filter:brightness(1.06)}
+@media(max-width:719px){.top.has-acts>div{flex-wrap:wrap}.top.has-acts .acts{order:3;width:100%;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin:2px 0 0}
+ .top .ib{height:56px;flex-direction:column;gap:4px;padding:0 4px;border-radius:16px;font-size:11px}.top .ib span{display:inline;white-space:nowrap}.top .ib svg{width:20px;height:20px}}
+/* жидкое стекло — если включено в приложении владельца */
+html.lg,html.lg body{background:radial-gradient(48% 55% at 8% 0%,color-mix(in srgb,var(--acc) 26%,transparent),transparent 70%),radial-gradient(45% 50% at 100% 100%,rgba(139,92,246,.2),transparent 70%),radial-gradient(40% 45% at 60% 45%,rgba(20,184,166,.13),transparent 70%),var(--bg);min-height:100%}
+html.lg body{background:transparent} .mk{color:var(--bg)!important;z-index:1;position:relative}
+html.lg .top{background:color-mix(in srgb,var(--card) 45%,transparent);border-bottom:1px solid rgba(255,255,255,.25);box-shadow:inset 0 -1px 0 rgba(255,255,255,.12)}
+html.lg .ib{background:color-mix(in srgb,var(--card) 45%,transparent);backdrop-filter:blur(14px) saturate(170%);-webkit-backdrop-filter:blur(14px) saturate(170%);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+html.lg .ib.tl,html.lg .ib.wa{background:radial-gradient(130% 100% at 50% -35%,rgba(255,255,255,.45),rgba(255,255,255,0) 60%),color-mix(in srgb,var(--c) 85%,transparent);--c:var(--acc)} html.lg .ib.wa{--c:#1fae5b}
+html.lg .pft{border-top-color:rgba(255,255,255,.25)}
 .fd-s{font-size:13px;color:var(--dim);font-weight:600;margin-top:3px}
 .fd-map{position:relative;display:block;height:150px;border-radius:20px;overflow:hidden;margin-top:4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23eae6dc'/%3E%3Cpath d='M0 140 C80 120 120 160 200 130 S320 90 400 110' stroke='%23fff' stroke-width='14' fill='none'/%3E%3Cpath d='M120 0 L160 200' stroke='%23fff' stroke-width='10'/%3E%3Cpath d='M260 0 C250 60 300 120 280 200' stroke='%23fff' stroke-width='8' fill='none'/%3E%3Crect x='20' y='20' width='80' height='60' rx='8' fill='%23dcd6c7'/%3E%3Crect x='300' y='30' width='70' height='50' rx='8' fill='%23d4e4cf'/%3E%3Crect x='190' y='150' width='60' height='40' rx='8' fill='%23dcd6c7'/%3E%3C/svg%3E") center/cover}
 .fd-pin{position:absolute;left:50%;top:46%;width:46px;height:46px;margin:-46px 0 0 -23px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#f2a93b;box-shadow:0 8px 18px rgba(242,169,59,.6);display:grid;place-items:center;animation:fdb 2s ease-in-out infinite}
@@ -181,12 +193,8 @@ function p2(x){return String(x).padStart(2,'0');}
 function dt(v){var d=new Date(v);if(isNaN(d))return '';return p2(d.getDate())+'.'+p2(d.getMonth()+1)+', '+p2(d.getHours())+':'+p2(d.getMinutes());}
 function dig(p){return String(p||'').replace(/\D/g,'');}
 function photos(c){var a=[];if(c.photo)a.push(API+'/photo/'+encodeURIComponent(c.id)+'?v='+c.photo);(c.gallery||[]).forEach(function(id){a.push(API+'/g/'+encodeURIComponent(c.id)+'/'+encodeURIComponent(id));});return a;}
-function until(c){var now=Date.now();
-  if(c.status==='free') return c.bookedFrom?'свободна до '+dt(c.bookedFrom):'';
-  if(c.status==='rented') return c.until&&Date.parse(c.until)>now?'освободится '+dt(c.until):'';
-  if(c.status==='booked') return c.from?'бронь с '+dt(c.from):'';
-  return '';}
-function longSt(c){if(c.status==='free')return c.bookedFrom?'Свободна до '+dt(c.bookedFrom):'Свободна сейчас';if(c.status==='rented')return c.until&&Date.parse(c.until)>Date.now()?'Освободится '+dt(c.until):'Сейчас в аренде';if(c.status==='booked')return c.from?'Бронь с '+dt(c.from):'Забронирована';return 'На обслуживании';}
+function until(c){return '';}
+function longSt(c){return {free:'Свободна',rented:'В аренде',booked:'Забронирована',service:'Ремонт'}[c.status]||'Свободна';}
 function waText(c){var n=c.make+' '+c.model+(c.year?' ('+c.year+')':'');var p=c.rate?', '+money(c.rate).replace(/ /g,' ')+' в сутки':'';
   if(c.status==='free') return 'Здравствуйте! Хочу арендовать '+n+p+'. Машина свободна?';
   if(c.status==='rented') return 'Здравствуйте! Интересует '+n+p+'. Когда освободится?';
@@ -208,10 +216,12 @@ function head(){
   else if(L.sq){mk.innerHTML='<img alt="" src="'+API+'/logo/sq?v='+L.sq+'">';mk.className='mk i';}
   else{mk.textContent=(co.trim().charAt(0)||'·').toUpperCase();mk.className='mk';}
   cob.textContent=co;
-  var a='';
+  var a='', ph=dig(D.phone);
   if(D.terms||D.about) a+='<button class="ib" data-md="terms">'+ic.doc+'<span>'+(D.terms?'Условия аренды':'О нас')+'</span></button>';
-  if(D.address) a+='<button class="ib'+(D.terms?' sq':'')+'" data-md="addr" title="Как нас найти">'+ic.pin+(D.terms?'':'<span>Адрес</span>')+'</button>';
-  if(D.phone) a+='<a class="ib sq" href="tel:+'+dig(D.phone)+'" title="Позвонить">'+ic.tel+'</a>';
+  if(D.address) a+='<button class="ib" data-md="addr" title="Как нас найти">'+ic.pin+'<span>Как нас найти</span></button>';
+  if(ph) a+='<a class="ib tl" href="tel:+'+ph+'" title="Позвонить">'+ic.tel+'<span>Позвонить</span></a>';
+  if(ph) a+='<a class="ib wa" target="_blank" rel="noopener" href="https://wa.me/'+ph+'" title="WhatsApp">'+'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.2.5.1.6-.1l.8-1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.4z"/></svg>'+'<span>WhatsApp</span></a>';
+  top.classList.toggle('has-acts',!!a); document.documentElement.classList.toggle('lg',!!(D.look&&D.look.lg));
   var el=document.getElementById('acts'); el.innerHTML=a;
   [].forEach.call(el.querySelectorAll('[data-md]'),function(b){b.onclick=function(){openMd(b.getAttribute('data-md'));};});
   document.title=co+' — автомобили в аренду';}
@@ -231,13 +241,16 @@ function draw(){if(!APPFAIL){D.look=Object.assign({tile:'s7',mob:'cm4',view:'til
 var FR=null, FRW=null;
 function isWide(){var w=window.innerWidth,h=window.innerHeight;return w>=1200||(w>=900&&w>h&&h>=500);}
 function appCars(){return (D.cars||[]).map(function(c){return {id:c.id,make:c.make,model:c.model,year:c.year,plate:c.plate||'',rate:c.rate||0,rate6h:c.rate6h||0,status:c.status,photo:c.photo?API+'/photo/'+encodeURIComponent(c.id)+'?v='+c.photo:''};});}
-function appContracts(){var a=[];(D.cars||[]).forEach(function(c){if(c.status==='rented'&&c.until){var end=c.until,st=c.since||new Date(Date.parse(end)-864e5).toISOString();a.push({id:'k'+c.id,carId:c.id,status:'active',type:'rental',start:st,end:end,rentalType:c.h6?'6h':'day',rate:c.rate||0,total:c.rate||0});}});return a;}
-function frameDoc(wide){var L=D.look||{};var light=L.mode==='light';var acc=(L.accent?'--accent:'+L.accent+';':'')+(L.accentDim?'--accent-dim:'+L.accentDim+';':'');
+// клиентам не показываем сроки аренды и просрочку — только статус машины
+function appContracts(){return [];}
+function frameDoc(wide){var L=D.look||{};var light=L.mode==='light';var acc=(L.accent?'--accent:'+L.accent+';':'')+(L.accentDim?'--accent-dim:'+L.accentDim+';':'')+(L.wt?'--on-accent:#fff;--on-good:#fff;':'');
   var bc=(wide?'win-mode tl-b ':'')+(L.chip==='cur'?'fx-old ':'')+(L.chip==='f5'?'fx-el':'');
-  return '<!doctype html><html lang="ru" class="'+(light?'theme-light':'')+'" style="color-scheme:'+(light?'light':'dark')+';'+acc+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/park-cards.css">'+
-   '<style>html,body{height:auto!important;min-height:0!important;overflow:hidden!important}#app{height:auto!important;min-height:0!important;max-width:none!important;margin:0!important;width:100%!important;display:block!important}main{overflow:visible!important;flex:none!important;zoom:1!important;padding:2px 20px 24px!important}header.top{display:none!important}[data-pk]{cursor:pointer}main>.section-title{margin:52px 2px 18px!important}main>.chips{margin-bottom:6px!important}.chip{cursor:pointer}</style>'+
+  return '<!doctype html><html lang="ru" class="'+(light?'theme-light':'')+(L.lg?' lg':'')+'" style="color-scheme:'+(light?'light':'dark')+';'+acc+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/park-cards.css">'+
+   '<style>html,body{height:auto!important;min-height:0!important;overflow:hidden!important}#app{height:auto!important;min-height:0!important;max-width:none!important;margin:0!important;width:100%!important;display:block!important}main{overflow:visible!important;flex:none!important;zoom:1!important;padding:2px 20px 24px!important}header.top{display:none!important}[data-pk]{cursor:pointer}main>.section-title{margin:22px 2px 16px!important}main{max-width:none!important;width:100%!important;margin:0!important}'+(wide?'':'main{display:block!important}@media(min-width:600px){.cmd-grid,.cmc-wrap{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))!important}}')+'html.lg,html.lg body,html.lg #app{background:transparent!important}html.lg main .card{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}main>.chips{margin-bottom:6px!important}.chip{cursor:pointer}</style>'+
    '<script src="/park-cards.js"><\/script></head><body class="'+bc+'" style="'+acc+'"><div id="app"><main id="main"></main></div></body></html>';}
-function drawApp(){var a=document.getElementById('app');document.body.classList.add('appb');head();document.documentElement.setAttribute('data-m',(D.look&&D.look.mode)==='light'?'light':'dark');
+function pfoot(){var f=document.getElementById('pft');if(!f){f=document.createElement('footer');f.id='pft';f.className='pft';document.body.appendChild(f);}var ph=dig(D.phone);
+  f.innerHTML='<div><b>'+e(D.company||'Автопрокат')+'</b>'+(D.address?'<div>'+e(D.address)+'</div>':'')+'<div style="margin-top:4px;font-size:12px">Работает на XCAR</div></div>'+(ph?'<div class="pfa"><a class="ib tl" href="tel:+'+ph+'">'+ic.tel+'<span>Позвонить</span></a><a class="ib wa" target="_blank" rel="noopener" href="https://wa.me/'+ph+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2.1 1-2.4c.3-.3.6-.3.8-.3h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.2.5.1.6-.1l.8-1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.4z"/></svg><span>WhatsApp</span></a></div>':'');}
+function drawApp(){var a=document.getElementById('app');document.body.classList.add('appb');head();pfoot();document.documentElement.setAttribute('data-m',(D.look&&D.look.mode)==='light'?'light':'dark');document.documentElement.style.colorScheme=(D.look&&D.look.mode)==='light'?'light':'dark';
   var wide=isWide();
   if(!FR||FRW!==wide){a.className='appm';a.innerHTML='<iframe id="cf" title="Автопарк" scrolling="no"></iframe>';FR=a.querySelector('#cf');FRW=wide;FR.onload=function(){fillFrame();};FR.srcdoc=frameDoc(wide);return;}
   fillFrame();}
@@ -257,9 +270,10 @@ var FRT0=0;function fillFrame(){var w=FR&&FR.contentWindow,d=FR&&FR.contentDocum
   var roots=wrap?(m.querySelector('.'+wrap)||m).children:[].filter.call(m.children,function(x){return !x.classList.contains('chips')&&!x.classList.contains('section-title')&&!x.classList.contains('empty');});
   [].forEach.call(roots,function(el,i){var c=list[i];if(!c)return;el.removeAttribute('onclick');el.setAttribute('data-pk',c.id);[].forEach.call(el.querySelectorAll('[onclick],button,input,select,textarea'),function(x){x.remove();});});
   [].forEach.call(m.querySelectorAll('[onclick]'),function(x){x.removeAttribute('onclick');});
+  [].forEach.call(m.querySelectorAll('.cm-tm,.timer-pill,.wct-timer,.cma-p,.ctv-prog'),function(x){x.style.visibility='hidden';});
   if(!d.__pkBound){d.__pkBound=1;d.addEventListener('click',function(ev){var f=ev.target.closest&&ev.target.closest('[data-f]');if(f){F=f.getAttribute('data-f');fillFrame();return;}var k=ev.target.closest&&ev.target.closest('[data-pk]');if(k)lbOpen(k.getAttribute('data-pk'));});
     try{new ResizeObserver(fit).observe(d.body);}catch(e){} d.addEventListener('load',fit,true);}
-  try{var bg=w.getComputedStyle(d.body).backgroundColor;if(bg){document.body.style.background=bg;document.documentElement.style.setProperty('--bg',bg);}}catch(e){}
+  try{var bg=(w.getComputedStyle(d.documentElement).getPropertyValue('--bg')||'').trim()||w.getComputedStyle(d.body).backgroundColor;var tx=(w.getComputedStyle(d.documentElement).getPropertyValue('--text')||'').trim();if(bg&&!/rgba\(0, 0, 0, 0\)|transparent/.test(bg)){if(!(D.look&&D.look.lg))document.body.style.background=bg;else document.body.style.background='';document.documentElement.style.setProperty('--bg',bg);}if(tx)document.documentElement.style.setProperty('--tx',tx);}catch(e){}
   fit();}
 function fit(){if(!FR||!FR.contentDocument)return;var h=FR.contentDocument.documentElement.scrollHeight;FR.style.height=h+'px';}
 window.addEventListener('resize',function(){if(D)head();if(D&&D.look&&FR&&isWide()!==FRW)drawApp();else fit();});

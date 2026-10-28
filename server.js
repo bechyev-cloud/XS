@@ -110,12 +110,16 @@ app.use('/api/push', pushRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/check', checkRoutes);
+app.use('/api/service', require('./routes/service'));
 app.use('/api/control', control.router);
 // «Статус автопарка»: ссылка для клиентов (Машины → Статус в приложении)
 const parkRoutes = require('./routes/park');
 app.use('/api/park', parkRoutes.owner);
 app.use('/api/public', parkRoutes.pub);
 app.use('/', parkRoutes.html);
+const userPage = require('./routes/userpage');
+app.use('/api/public', userPage.pub);
+app.use('/', userPage.html);
 
 // Супер-админ панель — отдаётся прямо этим сервером, без отдельного хостинга.
 // Откройте https://ваш-сервер/admin в браузере.

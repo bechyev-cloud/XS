@@ -79,6 +79,8 @@ pub.get('/park/:token/g/:carId/:id', (req, res) => {
 const html = express.Router();
 html.get('/park/:token', pubLimiter, (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
+  // страницу можно показать внутри приложения владельца («Так увидят клиенты»)
+  res.removeHeader('X-Frame-Options'); res.setHeader('Content-Security-Policy', 'frame-ancestors *');
   res.type('html').send(page.render(tokOk(req.params.token) ? req.params.token : ''));
 });
 

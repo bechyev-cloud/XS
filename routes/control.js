@@ -210,7 +210,8 @@ router.get('/users', perm('users.view'), wrap(async (req, res) => {
   const all = await agg.loadAll(); const now = agg.localNow(await tz());
   const rentals = agg.buildRentals(all, now);
   const inc = agg.incomeEvents(all.accounts);
-  const list = all.accounts.map((a) => publicUser(a.user, all.cfg, {
+  const rmap = await require('../lib/roles').map();
+  const list = all.accounts.map((a) => publicUser(a.user, all.cfg, { appRole: rmap[a.user.id] || '',
     counts: { cars: (a.store.cars || []).length, clients: (a.store.clients || []).length, contracts: (a.store.contracts || []).length },
     rentals: rentals.filter((r) => r.accountId === a.user.id).length,
     paymentsSum: inc.filter((e) => e.accountId === a.user.id).reduce((s, e) => s + e.amount, 0),
@@ -225,7 +226,7 @@ router.get('/users/:id', perm('users.view'), wrap(async (req, res) => {
   const reqs = (await listRequests()).filter((r) => r.userId === a.user.id);
   const inc = agg.incomeEvents([a]);
   res.json({
-    user: publicUser(a.user, all.cfg, { consents: a.user.consents || null }),
+    user: publicUser(a.user, all.cfg, { consents: a.user.consents || null, appRole: await require('../lib/roles').role(a.user.id) }),
     stats: { cars: (a.store.cars || []).length, clients: (a.store.clients || []).length, contracts: (a.store.contracts || []).length,
       income: inc.reduce((s, e) => s + e.amount, 0), companyName: (a.store.settings || {}).companyName || null },
     fleet: can(req, 'fleet.view') ? agg.buildFleet(subAll, now) : [],
@@ -268,6 +269,14 @@ router.put('/users/:id/block', perm('users.edit'), wrap(async (req, res) => {
   const { user } = await mutateUser(req.params.id, (u) => { u.blocked = blocked; u.blockedAt = blocked ? new Date().toISOString() : null; });
   await audit.log(req, blocked ? 'Заблокировал аккаунт' : 'Разблокировал аккаунт', { type: 'user', id: user.id, name: user.companyName });
   res.json({ user: publicUser(user, await readConfig()) });
+}));
+// звание «Разработчик» в приложении XCAR (не больше 2): разработчик назначает админов прямо в приложении
+router.put('/users/:id/dev', perm('users.edit'), wrap(async (req, res) => {
+  const on = !!(req.body || {}).on; const roles = require('../lib/roles');
+  const u = (await readUsers()).users.find((x) => x.id === req.params.id); if (!u) return res.status(404).json({ error: 'Пользователь не найден' });
+  try { await roles.setDev(u.id, on); } catch (e) { return res.status(400).json({ error: e.message }); }
+  await audit.log(req, on ? 'Назначил разработчиком' : 'Снял звание разработчика', { type: 'user', id: u.id, name: u.companyName });
+  res.json({ ok: true, appRole: await roles.role(u.id), devs: await roles.devCount() });
 }));
 router.put('/users/:id/password', perm('users.edit'), wrap(async (req, res) => {
   const { password } = req.body || {};
